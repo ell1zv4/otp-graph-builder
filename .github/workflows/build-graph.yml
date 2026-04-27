@@ -71,7 +71,7 @@ jobs:
 
           ls -lah graph-source
 
-          java $JAVA_OPTS -jar otp.jar --build graph-source --save
+          java $JAVA_OPTS -jar otp.jar --build graph-source --save graph
       - name: Verify graph
         run: |
           echo "📦 Verificando graph..."
