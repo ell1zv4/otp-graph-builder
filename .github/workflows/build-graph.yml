@@ -49,7 +49,7 @@ jobs:
               api_key="${line#HEADER:apikey=}"
               api_key="${api_key%%|*}"
               url="${line##*|}"
-              file="$(basename "${url%%\?*}")"
+              file="$(basename "${url%%\?*}").zip"
 
               echo "⬇️ Descargando (API KEY) $file"
               curl -L -H "apikey: $api_key" "$url" -o "$file"
