@@ -65,7 +65,7 @@ jobs:
           set -e
           echo "🚀 Construyendo grafo OTP..."
           ls -lah graph-source
-          java $JAVA_OPTS -jar otp.jar --build graph-source
+          java $JAVA_OPTS -jar otp.jar --build --save graph graph-source
       - name: Move generated graph
         run: |
           set -e
