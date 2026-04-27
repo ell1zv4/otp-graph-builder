@@ -65,13 +65,15 @@ jobs:
             ls -lh "$file"
           done < sources.txt
 
-      - name: Build OTP graph (FIX REAL)
+      - name: Build OTP graph
         run: |
           set -e
           echo "🚀 Construyendo grafo OTP..."
 
           java $JAVA_OPTS -jar otp.jar \
-            --build graph-source
+            --build graph-source \
+            --save graph \
+            --serve
 
       - name: Move generated graph
         run: |
