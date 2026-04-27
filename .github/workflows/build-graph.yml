@@ -10,7 +10,7 @@ on:
 jobs:
   build-graph:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
 
     env:
       OTP_VERSION: '2.5.0'
@@ -28,25 +28,31 @@ jobs:
           java-version: 21
 
       - name: Cache OTP jar
-        id: otp-cache
+        id: cache-otp
         uses: actions/cache@v4
         with:
           path: otp.jar
           key: otp-jar-v2.5.0
 
       - name: Download OTP jar if needed
-        if: steps.otp-cache.outputs.cache-hit != 'true'
+        if: steps.cache-otp.outputs.cache-hit != 'true'
         run: |
-          curl -fSL "${OTP_URL}" -o otp.jar
+          curl -fsSL "$OTP_URL" -o otp.jar
           ls -lh otp.jar
 
-      - name: Print dir structure before build
-        run: ls -lR
+      - name: List input directory contents
+        run: |
+          echo "Contenidos de graph-source:"
+          ls -l graph-source || (echo "Falta la carpeta graph-source" && exit 1)
+
+      - name: Prepare output dir
+        run: mkdir -p graph
 
       - name: Build OTP Graph
         run: |
           set -e
-          echo "Iniciando construcción de grafo en $(pwd)"
+          ls -lh otp.jar
+          echo "Iniciando construcción de grafo"
           java $JAVA_OPTS -jar otp.jar --build graph-source --save graph
           echo "Build terminado"
           if ! [ -d "graph" ] || ! ls graph/* > /dev/null 2>&1; then
@@ -54,8 +60,8 @@ jobs:
             exit 1
           fi
 
-      - name: Print dir structure after build
-        run: ls -lR
+      - name: List result directory
+        run: ls -lR graph
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
