@@ -127,3 +127,7 @@ jobs:
           echo "🔄 Reiniciando OTP..."
 
           ssh root@89.167.73.244 "systemctl restart otp"
+      - name: Check graph size
+        run: |
+          ls -lh graph-source
+          ls -lh graph
