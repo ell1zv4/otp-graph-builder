@@ -18,41 +18,43 @@ jobs:
       JAVA_OPTS: '-Xmx6G -XX:+UseG1GC'
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 21
+      - name: Set up Java 21 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
+          distribution: 'temurin'
+          java-version: '21'
 
       - name: Cache OTP jar
         id: cache-otp
         uses: actions/cache@v4
         with:
           path: otp.jar
-          key: otp-jar-v2.5.0
+          key: otp-jar-${{ env.OTP_VERSION }}
 
-      - name: Download OTP jar if needed
+      - name: Download OTP jar if not cached
         if: steps.cache-otp.outputs.cache-hit != 'true'
         run: |
+          echo "Descargando OTP $OTP_VERSION desde Maven Central..."
           curl -fsSL "$OTP_URL" -o otp.jar
           ls -lh otp.jar
 
-      - name: List input directory contents
+      - name: Verify graph-source directory exists
         run: |
           echo "Contenidos de graph-source:"
           ls -l graph-source || (echo "Falta la carpeta graph-source" && exit 1)
 
-      - name: Prepare output dir
+      - name: Prepare output directory
         run: mkdir -p graph
 
       - name: Build OTP Graph
         run: |
           set -e
+          echo "Verificando jar descargado:"
           ls -lh otp.jar
-          echo "Iniciando construcción de grafo"
+          echo "Iniciando construcción de grafo OTP..."
           java $JAVA_OPTS -jar otp.jar --build graph-source --save graph
           echo "Build terminado"
           if ! [ -d "graph" ] || ! ls graph/* > /dev/null 2>&1; then
@@ -63,7 +65,7 @@ jobs:
       - name: List result directory
         run: ls -lR graph
 
-      - name: Upload graph artifact
+      - name: Upload OTP graph artifact
         uses: actions/upload-artifact@v4
         with:
           name: otp-graph
