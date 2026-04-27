@@ -1,0 +1,7 @@
+{
+  "area": "basque",
+  "build": {
+    "gtfs": ".",
+    "osm": "euskalherria.osm.pbf"
+  }
+}
