@@ -53,8 +53,9 @@ jobs:
           fi
           cd graph-source
           while read -r line; do
+            # Ignora lineas vacías o que empiezan por #
             [[ -z "$line" ]] && continue
-            # Si hay HEADER:ApiKey=...| lo parsea --
+            [[ "$line" =~ ^# ]] && continue
             if [[ "$line" == HEADER:ApiKey=*'|'* ]]; then
               header_val="${line#HEADER:ApiKey=}"
               header_val="${header_val%%|*}"
