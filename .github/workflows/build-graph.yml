@@ -140,6 +140,11 @@ jobs:
 
           echo ""
           echo "✅ VALIDACIÓN COMPLETA OK"
+      - name: Check unlinked stops
+        run: |
+          pip install osmnx pandas shapely pyproj
+          cd graph-source
+          python check_unlinked_stops.py
 
       - name: Build OTP graph
         run: |
