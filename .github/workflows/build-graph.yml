@@ -1,4 +1,4 @@
-name: Build OTP Graph (Header Auth Support)
+name: Build OTP Graph
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
       - name: Prepare graph-source directory
         run: mkdir -p graph-source
 
-      - name: Download graph data (with/without ApiKey header)
+      - name: Download graph data (simple, segura)
         run: |
           set -e
           sources_file="graph-source/sources.txt"
@@ -53,29 +53,15 @@ jobs:
           fi
           cd graph-source
           while read -r line; do
-            # Ignora lineas vacías o que empiezan por #
             [[ -z "$line" ]] && continue
             [[ "$line" =~ ^# ]] && continue
-            if [[ "$line" == HEADER:ApiKey=*'|'* ]]; then
-              header_val="${line#HEADER:ApiKey=}"
-              header_val="${header_val%%|*}"
-              url="${line##*|}"
-              fname=$(basename "${url%%\?*}")
-              echo "⬇️  Descargando con header ApiKey $fname desde $url"
-              curl -fsSL -H "ApiKey: $header_val" "$url" -o "$fname"
-              if [ ! -s "$fname" ]; then
-                echo "❌ Error (header): archivo $fname vacío o fallo descarga"
-                exit 1
-              fi
-            else
-              url="$line"
-              fname=$(basename "${url%%\?*}")
-              echo "⬇️  Descargando $fname desde $url"
-              curl -fsSL "$url" -o "$fname"
-              if [ ! -s "$fname" ]; then
-                echo "❌ Error: archivo $fname vacío o fallo descarga"
-                exit 1
-              fi
+            url="$line"
+            fname=$(basename "${url%%\?*}")
+            echo "⬇️  Descargando $fname desde $url"
+            curl -fSL "$url" -o "$fname"
+            if [ ! -s "$fname" ]; then
+              echo "❌ Error: archivo $fname vacío o fallo de descarga"
+              exit 1
             fi
           done < sources.txt
           echo "✅ Datos descargados:"
