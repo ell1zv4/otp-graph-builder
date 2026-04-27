@@ -4,42 +4,63 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'graph-source/**'
+      - 'otp/graph-source/**'
+      - '.github/workflows/build-graph.yml'
 
 jobs:
   build-graph:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      OTP_VERSION: '2.5.0'
+      OTP_URL: 'https://repo1.maven.org/maven2/org/opentripplanner/otp/2.5.0/otp-2.5.0-shaded.jar'
+      JAVA_OPTS: '-Xmx6G -XX:+UseG1GC'
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 21
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Download OTP jar
-        run: |
-          echo "Downloading OTP..."
-          curl -L -o otp.jar https://repo1.maven.org/maven2/org/opentripplanner/otp/2.5.0/otp-2.5.0-shaded.jar
-          ls -lh
+      - name: Cache OTP jar
+        id: otp-cache
+        uses: actions/cache@v4
+        with:
+          path: otp/otp.jar
+          key: otp-jar-v2.5.0
 
-      - name: Show workspace
+      - name: Download OTP jar if needed
+        if: steps.otp-cache.outputs.cache-hit != 'true'
         run: |
-          echo "Workspace content:"
-          ls -R
+          mkdir -p otp
+          curl -fSL "${OTP_URL}" -o otp/otp.jar
+          ls -lh otp/otp.jar
 
-      - name: Build graph
+      - name: Print dir structure before build
+        run: ls -lR otp
+
+      - name: Build OTP Graph
         run: |
-          echo "Starting graph build..."
-          java -Xmx6G -XX:+UseG1GC -jar otp.jar \
-            --build graph-source \
-            --save graph
+          set -e
+          echo "Iniciando construcción de grafo en $(pwd)"
+          java $JAVA_OPTS -jar otp/otp.jar --build otp/graph-source --save otp/graph
+          echo "Build terminado"
+          if ! [ -d "otp/graph" ] || ! ls otp/graph/* > /dev/null 2>&1; then
+            echo "Error: el directorio otp/graph está vacío, fallo de construcción"
+            exit 1
+          fi
+
+      - name: Print dir structure after build
+        run: ls -lR otp
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
         with:
           name: otp-graph
-          path: graph
+          path: otp/graph
+          retention-days: 30
