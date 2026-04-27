@@ -1,4 +1,4 @@
-HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1267
-HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1262
-HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1130
+https://nap.transportes.gob.es/api/Fichero/download/1267?ApiKey=7badbce5-8964-402a-9d0a-dd7638586426
+https://nap.transportes.gob.es/api/Fichero/download/1262?ApiKey=7badbce5-8964-402a-9d0a-dd7638586426
+https://nap.transportes.gob.es/api/Fichero/download/1130?ApiKey=7badbce5-8964-402a-9d0a-dd7638586426
 https://download.geofabrik.de/europe/spain/basque-country-latest.osm.pbf
