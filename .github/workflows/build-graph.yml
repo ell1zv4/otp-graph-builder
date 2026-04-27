@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 120
 
     env:
-      OTP_URL: "https://repo1.maven.org/maven2/org/opentripplanner/otp/2.5.0/otp-2.5.0-shaded.jar"
+      OTP_URL: "https://repo1.maven.org/maven2/org/opentripplanner/otp/2.6.0/otp-2.6.0-shaded.jar"
       JAVA_OPTS: "-Xmx6G -XX:+UseG1GC"
 
     steps:
