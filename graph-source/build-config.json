@@ -1,21 +1,13 @@
 {
+  "osm": "euskalherria.osm.pbf",
   "transitFeeds": [
-    {
-      "type": "gtfs",
-      "source": "bilbobus.zip"
-    },
-    {
-      "type": "gtfs",
-      "source": "Bizkaibus.zip"
-    },
-    {
-      "type": "gtfs",
-      "source": "metro.zip"
-    },
-    {
-      "type": "gtfs",
-      "source": "renfe.zip"
-    }
+    "bilbobus.zip",
+    "Bizkaibus.zip",
+    "metro.zip",
+    "renfe.zip"
   ],
-  "interliningTransferGenerator": false
+  "build": {
+    "interlineRouting": false,
+    "transitModel": true
+  }
 }
