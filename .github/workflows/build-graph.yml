@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'otp/graph-source/**'
+      - 'graph-source/**'
       - '.github/workflows/build-graph.yml'
 
 jobs:
@@ -31,36 +31,35 @@ jobs:
         id: otp-cache
         uses: actions/cache@v4
         with:
-          path: otp/otp.jar
+          path: otp.jar
           key: otp-jar-v2.5.0
 
       - name: Download OTP jar if needed
         if: steps.otp-cache.outputs.cache-hit != 'true'
         run: |
-          mkdir -p otp
-          curl -fSL "${OTP_URL}" -o otp/otp.jar
-          ls -lh otp/otp.jar
+          curl -fSL "${OTP_URL}" -o otp.jar
+          ls -lh otp.jar
 
       - name: Print dir structure before build
-        run: ls -lR otp
+        run: ls -lR
 
       - name: Build OTP Graph
         run: |
           set -e
           echo "Iniciando construcción de grafo en $(pwd)"
-          java $JAVA_OPTS -jar otp/otp.jar --build otp/graph-source --save otp/graph
+          java $JAVA_OPTS -jar otp.jar --build graph-source --save graph
           echo "Build terminado"
-          if ! [ -d "otp/graph" ] || ! ls otp/graph/* > /dev/null 2>&1; then
-            echo "Error: el directorio otp/graph está vacío, fallo de construcción"
+          if ! [ -d "graph" ] || ! ls graph/* > /dev/null 2>&1; then
+            echo "Error: el directorio graph está vacío, fallo de construcción"
             exit 1
           fi
 
       - name: Print dir structure after build
-        run: ls -lR otp
+        run: ls -lR
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
         with:
           name: otp-graph
-          path: otp/graph
+          path: graph
           retention-days: 30
