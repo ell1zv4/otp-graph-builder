@@ -1,4 +1,4 @@
 HEADER:apikey=7badbce5-8964-402a-9d0a-dd7638586426|https://nap.transportes.gob.es/api/Fichero/download/1267
 HEADER:apikey=7badbce5-8964-402a-9d0a-dd7638586426|https://nap.transportes.gob.es/api/Fichero/download/1262
 HEADER:apikey=7badbce5-8964-402a-9d0a-dd7638586426|https://nap.transportes.gob.es/api/Fichero/download/1130
-https://download.geofabrik.de/europe/spain/basque-country-latest.osm.pbf
+https://download.geofabrik.de/europe/spain/pais-vasco-latest.osm.pbf
