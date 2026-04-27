@@ -63,15 +63,26 @@ jobs:
 
             ls -lh "$file"
           done < sources.txt
-
       - name: Build OTP graph
         run: |
           set -e
           echo "🚀 Construyendo grafo OTP..."
-
           ls -lah graph-source
+          java $JAVA_OPTS -jar otp.jar graph-source
 
-          java $JAVA_OPTS -jar otp.jar --build graph-source --save graph
+      - name: Move generated graph
+        run: |
+          echo "📦 Moviendo graph..."
+          
+          if [ -d "graph-source/graph" ]; then
+            mv graph-source/graph ./graph
+          else
+            echo "❌ ERROR: OTP no generó graph"
+            exit 1
+          fi
+      
+          ls -lah graph
+
       - name: Verify graph
         run: |
           echo "📦 Verificando graph..."
