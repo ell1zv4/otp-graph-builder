@@ -73,7 +73,6 @@ jobs:
 
           java $JAVA_OPTS -jar otp.jar \
             --build \
-            --save \
             graph-source
 
       - name: Verify graph
