@@ -73,6 +73,74 @@ jobs:
             ls -lh "$file"
           done < sources.txt
 
+      # =========================
+      # 🆕 VALIDACIÓN AÑADIDA
+      # =========================
+      - name: Validate downloads (GTFS + OSM)
+        run: |
+          set -e
+          cd graph-source
+
+          echo "=============================="
+          echo "🔍 VALIDANDO DESCARGAS"
+          echo "=============================="
+
+          ls -lh
+
+          echo ""
+          echo "📦 VALIDANDO ZIPs GTFS..."
+
+          for f in *.zip; do
+            echo ""
+            echo "➡️ $f"
+
+            if [ ! -s "$f" ]; then
+              echo "❌ ZIP vacío"
+              exit 1
+            fi
+
+            size=$(stat -c%s "$f")
+            echo "📏 $size bytes"
+
+            if [ "$size" -lt 5000 ]; then
+              echo "❌ ZIP demasiado pequeño → corrupto"
+              exit 1
+            fi
+
+            unzip -l "$f" | head -20
+
+            if ! unzip -l "$f" | grep -q "stops.txt"; then
+              echo "❌ NO es GTFS válido (sin stops.txt)"
+              exit 1
+            fi
+
+            echo "✅ GTFS OK"
+          done
+
+          echo ""
+          echo "🗺️ VALIDANDO OSM..."
+
+          for f in *.pbf *.osm.pbf; do
+            if [ -f "$f" ]; then
+              echo ""
+              echo "➡️ $f"
+
+              size=$(stat -c%s "$f")
+              echo "📏 $size bytes"
+
+              if [ "$size" -lt 1000000 ]; then
+                echo "❌ OSM demasiado pequeño"
+                exit 1
+              fi
+
+              file "$f"
+              echo "✅ OSM OK"
+            fi
+          done
+
+          echo ""
+          echo "✅ VALIDACIÓN COMPLETA OK"
+
       - name: Build OTP graph
         run: |
           set -e
