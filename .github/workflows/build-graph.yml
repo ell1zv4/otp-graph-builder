@@ -71,7 +71,6 @@ jobs:
 
           ls -lah graph-source
 
-          # 🔥 COMANDO CORRECTO OTP 2.x
           java $JAVA_OPTS -jar otp.jar --build --save graph-source
 
       - name: Move generated graph
@@ -107,21 +106,24 @@ jobs:
           path: graph
           retention-days: 30
 
-      - name: Upload graph to Fly.io
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Setup SSH
         run: |
-          curl -L https://fly.io/install.sh | sh
-          export PATH="$HOME/.fly/bin:$PATH"
-      
-          flyctl auth login --access-token "$FLY_API_TOKEN"
-      
-          echo "📤 Subiendo graph.obj a Fly..."
-      
-          flyctl ssh console -a otp-fiesta-bizkaifest -C "mkdir -p /data"
-      
-          flyctl ssh console -a otp-fiesta-bizkaifest -C "rm -f /data/graph.obj"
-      
-          flyctl ssh console -a otp-fiesta-bizkaifest -C "exit"
-      
-          flyctl ssh sftp put graph/graph.obj /data/graph.obj -a otp-fiesta-bizkaifest
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan -H 89.167.73.244 >> ~/.ssh/known_hosts
+
+      - name: Upload graph to VPS
+        run: |
+          echo "📤 Subiendo graph.obj al servidor..."
+
+          ssh root@TU_IP "mkdir -p /opt/bizkaifest/graph"
+
+          scp graph/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj
+
+      - name: Restart OTP server
+        run: |
+          echo "🔄 Reiniciando OTP..."
+
+          ssh root@TU_IP "systemctl restart otp"
