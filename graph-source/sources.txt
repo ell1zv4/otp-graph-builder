@@ -1,4 +1,4 @@
-HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1267   # metro
-HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1262   # bizkaibus
-HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1130   # renfe
-https://download.geofabrik.de/europe/spain/basque-country-latest.osm.pbf                                  # OSM público
+HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1267
+HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1262
+HEADER:ApiKey=RYRis5v3PdH38uZIKKq57KHCMiCaInSB|https://nap.transportes.gob.es/api/Fichero/download/1130
+https://download.geofabrik.de/europe/spain/basque-country-latest.osm.pbf
