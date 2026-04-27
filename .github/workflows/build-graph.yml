@@ -63,35 +63,42 @@ jobs:
 
             ls -lh "$file"
           done < sources.txt
+
       - name: Build OTP graph
         run: |
           set -e
           echo "🚀 Construyendo grafo OTP..."
+
           ls -lah graph-source
-          java $JAVA_OPTS -jar otp.jar graph-source
+
+          # 🔥 COMANDO CORRECTO OTP 2.x
+          java $JAVA_OPTS -jar otp.jar --build --save graph-source
 
       - name: Move generated graph
         run: |
+          set -e
           echo "📦 Moviendo graph..."
-          
-          if [ -d "graph-source/graph" ]; then
-            mv graph-source/graph ./graph
+
+          if [ -f "graph-source/graph.obj" ]; then
+            mv graph-source/graph.obj graph/
           else
-            echo "❌ ERROR: OTP no generó graph"
+            echo "❌ ERROR: OTP no generó graph.obj"
             exit 1
           fi
-      
+
           ls -lah graph
 
       - name: Verify graph
         run: |
           echo "📦 Verificando graph..."
-          ls -lah graph
 
-          if [ ! -d "graph" ] || [ -z "$(ls -A graph)" ]; then
-            echo "❌ ERROR: graph vacío"
+          if [ ! -f "graph/graph.obj" ]; then
+            echo "❌ ERROR: graph.obj no existe"
             exit 1
           fi
+
+          echo "✅ Graph OK"
+          ls -lh graph
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
