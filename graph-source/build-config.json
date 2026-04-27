@@ -17,5 +17,11 @@
       "type": "gtfs",
       "source": "1267.zip"
     }
-  ]
+  ],
+  "config": {
+    "streetRoutingTimeoutSeconds": 600,
+    "maxTransferDuration": 7200,
+    "transitServiceStartTime": "2024-01-01",
+    "maxWalkDistance": 3000
+  }
 }
