@@ -18,8 +18,4 @@
       "source": "1267.zip"
     }
   ],
-  "build": {
-    "interlineRouting": false,
-    "transitModel": true
-  }
 }
