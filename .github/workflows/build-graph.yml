@@ -118,7 +118,7 @@ jobs:
         run: |
           echo "📤 Subiendo graph.obj al servidor..."
 
-          ssh root@TU_IP "mkdir -p /opt/bizkaifest/graph"
+          ssh root@89.167.73.244 "mkdir -p /opt/bizkaifest/graph"
 
           scp graph/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj
 
@@ -126,4 +126,4 @@ jobs:
         run: |
           echo "🔄 Reiniciando OTP..."
 
-          ssh root@TU_IP "systemctl restart otp"
+          ssh root@89.167.73.244 "systemctl restart otp"
