@@ -1,14 +1,12 @@
 import os
 import zipfile
 import pandas as pd
-import osmnx as ox
-from shapely.geometry import Point
+from pyrosm import OSM
 from pyproj import Geod
 
-# CONFIG
 OSM_FILE = "euskalherria.osm.pbf"
 GTFS_FILES = ["1130.zip", "1262.zip", "1267.zip"]
-MAX_WARN = 150  # metros
+MAX_WARN = 150  # meters
 
 geod = Geod(ellps="WGS84")
 
@@ -20,24 +18,30 @@ def load_stops(gtfs_zip):
             return df[["stop_id", "stop_name", "stop_lat", "stop_lon"]]
 
 
-def distance_to_nearest_road(graph, lat, lon):
-    node = ox.distance.nearest_nodes(graph, X=lon, Y=lat)
-    node_lat = graph.nodes[node]["y"]
-    node_lon = graph.nodes[node]["x"]
+def nearest_road_distance(osm, lat, lon):
+    # nearest node in OSM road network
+    nodes = osm.get_network(nodes=True, network_type="walking")
 
-    _, _, dist = geod.inv(lon, lat, node_lon, node_lat)
-    return dist
+    coords = nodes[["lat", "lon"]].values
+
+    min_dist = float("inf")
+
+    for nlat, nlon in coords[::50]:  # sampling for speed
+        _, _, dist = geod.inv(lon, lat, nlon, nlat)
+        if dist < min_dist:
+            min_dist = dist
+
+    return min_dist
 
 
 def main():
-    print("📦 Loading OSM...")
-    graph = ox.graph_from_file(OSM_FILE, simplify=True)
+    print("📦 Loading OSM (pyrosm)...")
+    osm = OSM(OSM_FILE)
 
-    all_results = []
+    results = []
 
     for gtfs in GTFS_FILES:
         print(f"\n📍 Processing {gtfs}")
-
         stops = load_stops(gtfs)
 
         for _, row in stops.iterrows():
@@ -45,52 +49,43 @@ def main():
             lon = row["stop_lon"]
 
             try:
-                dist = distance_to_nearest_road(graph, lat, lon)
+                dist = nearest_road_distance(osm, lat, lon)
 
-                all_results.append({
+                results.append({
                     "gtfs": gtfs,
-                    "stop_id": row["stop_id"],
-                    "name": row["stop_name"],
+                    "stop": row["stop_name"],
                     "lat": lat,
                     "lon": lon,
                     "distance_m": dist
                 })
 
-            except Exception as e:
-                all_results.append({
+            except Exception:
+                results.append({
                     "gtfs": gtfs,
-                    "stop_id": row["stop_id"],
-                    "name": row["stop_name"],
+                    "stop": row["stop_name"],
                     "lat": lat,
                     "lon": lon,
                     "distance_m": 9999
                 })
 
-    df = pd.DataFrame(all_results)
+    df = pd.DataFrame(results)
 
-    print("\n==============================")
-    print("❌ WORST OFFENDING STOPS")
-    print("==============================\n")
+    print("\n======================")
+    print("🔥 WORST OFFENDERS")
+    print("======================")
 
     worst = df.sort_values("distance_m", ascending=False).head(30)
 
     for _, r in worst.iterrows():
-        print(f"{r['gtfs']} | {r['name']}")
+        print(f"{r['gtfs']} | {r['stop']}")
         print(f"   📍 {r['lat']}, {r['lon']}")
-        print(f"   🚨 distance: {r['distance_m']:.2f} m\n")
-
-    print("\n==============================")
-    print("📊 SUMMARY")
-    print("==============================")
-    print(df["distance_m"].describe())
+        print(f"   🚨 {r['distance_m']:.2f} m\n")
 
     bad = df[df["distance_m"] > MAX_WARN]
 
-    print(f"\n⚠️ Stops > {MAX_WARN}m: {len(bad)} / {len(df)}")
-
-    if len(bad) > 0:
-        print("\n🔥 Top worst:")
-        print(bad.sort_values("distance_m", ascending=False).head(10))
+    print("\n======================")
+    print(f"⚠️ BAD STOPS > {MAX_WARN}m: {len(bad)}")
+    print("======================")
 
 
 if __name__ == "__main__":
