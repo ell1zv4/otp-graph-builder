@@ -7,15 +7,15 @@
   "transitFeeds": [
     {
       "type": "gtfs",
-      "source": "1130"
+      "source": "1130.zip"
     },
     {
       "type": "gtfs",
-      "source": "1262"
+      "source": "1262.zip"
     },
     {
       "type": "gtfs",
-      "source": "1267"
+      "source": "1267.zip"
     }
   ],
   "build": {
