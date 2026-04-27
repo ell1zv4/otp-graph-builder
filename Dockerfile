@@ -2,12 +2,10 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY otp.jar .
-COPY graph ./graph
-
 EXPOSE 8080
 
-CMD java -Xms2G -Xmx4G \
+CMD java \
+  -Xms2G -Xmx4G \
   -XX:+UseG1GC \
   -XX:+AlwaysPreTouch \
   -XX:MaxGCPauseMillis=200 \
