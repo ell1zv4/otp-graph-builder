@@ -43,7 +43,7 @@ jobs:
       - name: Prepare graph-source directory
         run: mkdir -p graph-source
 
-      - name: Download graph data (simple, segura)
+      - name: Download graph data (apikey header support)
         run: |
           set -e
           sources_file="graph-source/sources.txt"
@@ -55,13 +55,26 @@ jobs:
           while read -r line; do
             [[ -z "$line" ]] && continue
             [[ "$line" =~ ^# ]] && continue
-            url="$line"
-            fname=$(basename "${url%%\?*}")
-            echo "⬇️  Descargando $fname desde $url"
-            curl -fSL "$url" -o "$fname"
-            if [ ! -s "$fname" ]; then
-              echo "❌ Error: archivo $fname vacío o fallo de descarga"
-              exit 1
+            if [[ "$line" == HEADER:apikey=*'|'* ]]; then
+              header_val="${line#HEADER:apikey=}"
+              header_val="${header_val%%|*}"
+              url="${line##*|}"
+              fname=$(basename "${url%%\?*}")
+              echo "⬇️  Descargando con header apikey ($fname) desde $url"
+              curl -fsSL -H "apikey: $header_val" "$url" -o "$fname"
+              if [ ! -s "$fname" ]; then
+                echo "❌ Error (apikey-header): archivo $fname vacío o fallo descarga"
+                exit 1
+              fi
+            else
+              url="$line"
+              fname=$(basename "${url%%\?*}")
+              echo "⬇️  Descargando $fname desde $url"
+              curl -fsSL "$url" -o "$fname"
+              if [ ! -s "$fname" ]; then
+                echo "❌ Error: archivo $fname vacío o fallo descarga"
+                exit 1
+              fi
             fi
           done < sources.txt
           echo "✅ Datos descargados:"
