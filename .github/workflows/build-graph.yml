@@ -13,7 +13,6 @@ jobs:
     timeout-minutes: 120
 
     env:
-      OTP_VERSION: "2.5.0"
       OTP_URL: "https://repo1.maven.org/maven2/org/opentripplanner/otp/2.5.0/otp-2.5.0-shaded.jar"
       JAVA_OPTS: "-Xmx6G -XX:+UseG1GC"
 
@@ -70,23 +69,19 @@ jobs:
           set -e
           echo "🚀 Construyendo grafo OTP..."
 
-          java $JAVA_OPTS -jar otp.jar \
-            --build graph-source \
-            --save graph
-            
-      - name: Move generated graph
-        run: |
-          echo "📦 Moviendo resultado..."
-          if [ -d "graph-source/graph" ]; then
-            mv graph-source/graph graph
-          fi
+          ls -lah graph-source
 
-          if [ ! -d "graph" ]; then
-            echo "❌ ERROR: No se ha generado el graph"
+          java $JAVA_OPTS -jar otp.jar --build graph-source --save graph
+
+      - name: Verify graph
+        run: |
+          echo "📦 Verificando graph..."
+          ls -lah graph
+
+          if [ ! -d "graph" ] || [ -z "$(ls -A graph)" ]; then
+            echo "❌ ERROR: graph vacío"
             exit 1
           fi
-
-          ls -lh graph
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
