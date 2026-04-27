@@ -106,3 +106,22 @@ jobs:
           name: otp-graph
           path: graph
           retention-days: 30
+
+      - name: Upload graph to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          curl -L https://fly.io/install.sh | sh
+          export PATH="$HOME/.fly/bin:$PATH"
+      
+          flyctl auth login --access-token "$FLY_API_TOKEN"
+      
+          echo "📤 Subiendo graph.obj a Fly..."
+      
+          flyctl ssh console -a otp-fiesta-bizkaifest -C "mkdir -p /data"
+      
+          flyctl ssh console -a otp-fiesta-bizkaifest -C "rm -f /data/graph.obj"
+      
+          flyctl ssh console -a otp-fiesta-bizkaifest -C "exit"
+      
+          flyctl ssh sftp put graph/graph.obj /data/graph.obj -a otp-fiesta-bizkaifest
