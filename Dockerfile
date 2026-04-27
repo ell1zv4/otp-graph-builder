@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
@@ -7,13 +7,16 @@ COPY graph ./graph
 
 EXPOSE 8080
 
+ENV JAVA_OPTS="-Xms2G -Xmx4G -XX:+UseG1GC -XX:+AlwaysPreTouch -XX:MaxGCPauseMillis=200"
+
 CMD ["java",
-  "-XX:MaxRAMPercentage=75",
+  "-Xms2G",
+  "-Xmx4G",
   "-XX:+UseG1GC",
   "-XX:+AlwaysPreTouch",
-  "-XX:+UseStringDeduplication",
-  "-XX:+DisableExplicitGC",
+  "-XX:MaxGCPauseMillis=200",
   "-Dorg.opentripplanner.http.bindAddress=0.0.0.0",
   "-jar", "otp.jar",
-  "--load", "graph"
+  "--load", "graph",
+  "--serve"
 ]
