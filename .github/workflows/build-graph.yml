@@ -55,7 +55,7 @@ jobs:
           fi
 
           if [ ! -f "basque-country-latest.osm.pbf" ]; then
-            curl -L "https://download.geofabrik.de/europe/spain/basque-country-latest.osm.pbf" -o euskalherria.osm.pbf
+            curl -L "https://download.geofabrik.de/europe/spain/pais-vasco-latest.osm.pbf" -o euskalherria.osm.pbf
           fi
 
       - name: Build OTP graph
