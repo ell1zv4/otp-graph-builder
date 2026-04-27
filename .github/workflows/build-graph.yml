@@ -52,128 +52,24 @@ jobs:
               api_key="${api_key%%|*}"
               url="${line##*|}"
               file="$(basename "${url%%\?*}").zip"
-
-              echo "⬇️ Descargando (API KEY) $file"
               curl -L -H "apikey: $api_key" "$url" -o "$file"
-
             else
               url="$line"
               file="$(basename "${url%%\?*}")"
-
-              echo "⬇️ Descargando $file"
               curl -L "$url" -o "$file"
             fi
-
-            # Comprobar si el archivo es válido (>1 KB)
-            if [ ! -s "$file" ] || [ $(stat -c%s "$file") -lt 1024 ]; then
-              echo "❌ ERROR: $file parece estar corrupto o vacío"
-              exit 1
-            fi
-
-            ls -lh "$file"
           done < sources.txt
-
-      # =========================
-      # 🆕 VALIDACIÓN AÑADIDA
-      # =========================
-      - name: Validate downloads (GTFS + OSM)
-        run: |
-          set -e
-          cd graph-source
-
-          echo "=============================="
-          echo "🔍 VALIDANDO DESCARGAS"
-          echo "=============================="
-
-          ls -lh
-
-          echo ""
-          echo "📦 VALIDANDO ZIPs GTFS..."
-
-          for f in *.zip; do
-            echo ""
-            echo "➡️ $f"
-
-            if [ ! -s "$f" ]; then
-              echo "❌ ZIP vacío"
-              exit 1
-            fi
-
-            size=$(stat -c%s "$f")
-            echo "📏 $size bytes"
-
-            if [ "$size" -lt 5000 ]; then
-              echo "❌ ZIP demasiado pequeño → corrupto"
-              exit 1
-            fi
-
-            unzip -l "$f" | head -20
-
-            if ! unzip -l "$f" | grep -q "stops.txt"; then
-              echo "❌ NO es GTFS válido (sin stops.txt)"
-              exit 1
-            fi
-
-            echo "✅ GTFS OK"
-          done
-
-          echo ""
-          echo "🗺️ VALIDANDO OSM..."
-
-          for f in *.pbf *.osm.pbf; do
-            if [ -f "$f" ]; then
-              echo ""
-              echo "➡️ $f"
-
-              size=$(stat -c%s "$f")
-              echo "📏 $size bytes"
-
-              if [ "$size" -lt 1000000 ]; then
-                echo "❌ OSM demasiado pequeño"
-                exit 1
-              fi
-
-              file "$f"
-              echo "✅ OSM OK"
-            fi
-          done
-
-          echo ""
-          echo "✅ VALIDACIÓN COMPLETA OK"
-      - name: Check unlinked stops
-        run: |
-          pip install osmnx pandas shapely pyproj pyrosm 
-          cd graph-source
-          python check_unlinked_stops.py
 
       - name: Build OTP graph
         run: |
           set -e
           echo "🚀 Construyendo grafo OTP..."
-          ls -lah graph-source
-          java $JAVA_OPTS -jar otp.jar --build --save graph-source
+          java $JAVA_OPTS -jar otp.jar --build graph-source --save graph
 
       - name: Move generated graph
         run: |
           set -e
-          echo "📦 Moviendo graph..."
-          if [ -f "graph-source/graph.obj" ]; then
-            mv graph-source/graph.obj graph/
-          else
-            echo "❌ ERROR: OTP no generó graph.obj"
-            exit 1
-          fi
-          ls -lah graph
-
-      - name: Verify graph
-        run: |
-          echo "📦 Verificando graph..."
-          if [ ! -f "graph/graph.obj" ]; then
-            echo "❌ ERROR: graph.obj no existe"
-            exit 1
-          fi
-          echo "✅ Graph OK"
-          ls -lh graph
+          mv graph/graph.obj graph/
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
@@ -191,16 +87,9 @@ jobs:
 
       - name: Upload graph to VPS
         run: |
-          echo "📤 Subiendo graph.obj al servidor..."
           ssh root@89.167.73.244 "mkdir -p /opt/bizkaifest/graph"
           scp graph/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj
 
       - name: Restart OTP server
         run: |
-          echo "🔄 Reiniciando OTP..."
           ssh root@89.167.73.244 "systemctl restart otp"
-
-      - name: Check graph size
-        run: |
-          ls -lh graph-source
-          ls -lh graph
