@@ -142,7 +142,7 @@ jobs:
           echo "✅ VALIDACIÓN COMPLETA OK"
       - name: Check unlinked stops
         run: |
-          pip install osmnx pandas shapely pyproj
+          pip install osmnx pandas shapely pyproj pyrosm 
           cd graph-source
           python check_unlinked_stops.py
 
