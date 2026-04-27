@@ -1,4 +1,4 @@
-name: Build OTP Graph (Remote Data)
+name: Build OTP Graph (Header Auth Support)
 
 on:
   workflow_dispatch:
@@ -43,29 +43,45 @@ jobs:
       - name: Prepare graph-source directory
         run: mkdir -p graph-source
 
-      - name: Download graph data from remote sources
+      - name: Download graph data (with/without ApiKey header)
         run: |
           set -e
           sources_file="graph-source/sources.txt"
           if [ ! -f "$sources_file" ]; then
-            echo "❌ ERROR: Debes crear el archivo $sources_file con una URL válida por línea (GTFS, OSM)."
+            echo "❌ ERROR: Debes crear $sources_file con una URL válida por línea."
             exit 1
           fi
           cd graph-source
-          while read -r url; do
-            [ -z "$url" ] && continue
-            fname=$(basename "${url%%\?*}")
-            echo "⬇️  Bajando $fname de $url"
-            curl -fsSL "$url" -o "$fname"
-            if [ ! -s "$fname" ]; then
-              echo "❌ Descarga de $fname ha fallado o está vacía."
-              exit 1
+          while read -r line; do
+            [[ -z "$line" ]] && continue
+            # -- Si hay HEADER:ApiKey=...| lo parsea --
+            if [[ "$line" == HEADER:ApiKey=*'|'* ]]; then
+              header_val="${line#HEADER:ApiKey=}"
+              header_val="${header_val%%|*}"
+              url="${line##*|}"
+              fname=$(basename "${url%%\?*}")
+              echo "⬇️  Descargando con header ApiKey $fname desde $url"
+              curl -fsSL -H "ApiKey: $header_val" "$url" -o "$fname"
+              # Puede haber problemas con Content-Disposition: filename=... lo respetamos así:
+              if [ ! -s "$fname" ]; then
+                echo "❌ Error (header): archivo $fname vacío o fallo descarga"
+                exit 1
+              fi
+            else
+              url="$line"
+              fname=$(basename "${url%%\?*}")
+              echo "⬇️  Descargando $fname desde $url"
+              curl -fsSL "$url" -o "$fname"
+              if [ ! -s "$fname" ]; then
+                echo "❌ Error: archivo $fname vacío o fallo descarga"
+                exit 1
+              fi
             fi
-          done < sources.txt
+          done < ../sources.txt
           echo "✅ Datos descargados:"
           ls -lh
 
-      - name: Prepara carpeta de salida graph/
+      - name: Prepare output dir
         run: mkdir -p graph
 
       - name: Build OTP Graph
@@ -79,10 +95,10 @@ jobs:
             exit 1
           fi
 
-      - name: Lista directorio resultante
+      - name: List result directory
         run: ls -lh graph
 
-      - name: Sube grafo como artifact
+      - name: Upload graph artifact
         uses: actions/upload-artifact@v4
         with:
           name: otp-graph
