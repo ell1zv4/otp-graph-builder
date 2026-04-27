@@ -2,7 +2,7 @@ name: Build OTP Graph
 
 on:
   schedule:
-    - cron: '0 * * * *'  # se ejecuta cada hora en minuto 0
+    - cron: '0 3 * * 0'  # SOLO 1 vez por semana
   workflow_dispatch:
   push:
     paths:
@@ -31,105 +31,60 @@ jobs:
       - name: Download OTP jar
         run: |
           curl -L "$OTP_URL" -o otp.jar
-          ls -lh otp.jar
 
       - name: Prepare directories
         run: |
-          mkdir -p graph-source
-          mkdir -p graph
+          mkdir -p graph-source graph
 
-      - name: Download GTFS + OSM data
+      # 🔥 CAMBIO IMPORTANTE: CACHE DE GTFS/OSM
+      - name: Restore cached graph sources
+        uses: actions/cache@v4
+        with:
+          path: graph-source
+          key: gtfs-osm-cache-v1
+
+      - name: Download data ONLY if missing
         run: |
-          set -e
           cd graph-source
 
-          while read -r line; do
-            [[ -z "$line" ]] && continue
-            [[ "$line" =~ ^# ]] && continue
+          if [ ! -f "1267.zip" ]; then
+            echo "⬇️ Descargando GTFS..."
+            curl -L "https://nap.transportes.gob.es/api/Fichero/download/1267" -o 1267.zip
+            curl -L "https://nap.transportes.gob.es/api/Fichero/download/1262" -o 1262.zip
+            curl -L "https://nap.transportes.gob.es/api/Fichero/download/1130" -o 1130.zip
+          fi
 
-            if [[ "$line" == HEADER:apikey=*'|'* ]]; then
-              api_key="${line#HEADER:apikey=}"
-              api_key="${api_key%%|*}"
-              url="${line##*|}"
-              file="$(basename "${url%%\?*}").zip"
-
-              echo "⬇️ Descargando (API KEY) $file"
-              curl -L -H "apikey: $api_key" "$url" -o "$file"
-            else
-              url="$line"
-              file="$(basename "${url%%\?*}")"
-
-              echo "⬇️ Descargando $file"
-              curl -L "$url" -o "$file"
-            fi
-
-            ls -lh "$file"
-          done < sources.txt
+          if [ ! -f "basque-country-latest.osm.pbf" ]; then
+            curl -L "https://download.geofabrik.de/europe/spain/basque-country-latest.osm.pbf" -o euskalherria.osm.pbf
+          fi
 
       - name: Build OTP graph
         run: |
           set -e
-          echo "🚀 Construyendo grafo OTP..."
-
-          ls -lah graph-source
-
           java $JAVA_OPTS -jar otp.jar --build --save graph-source
 
-      - name: Move generated graph
+      - name: Move graph
         run: |
-          set -e
-          echo "📦 Moviendo graph..."
+          mv graph-source/graph.obj graph/
 
-          if [ -f "graph-source/graph.obj" ]; then
-            mv graph-source/graph.obj graph/
-          else
-            echo "❌ ERROR: OTP no generó graph.obj"
-            exit 1
-          fi
-
-          ls -lah graph
-
-      - name: Verify graph
-        run: |
-          echo "📦 Verificando graph..."
-
-          if [ ! -f "graph/graph.obj" ]; then
-            echo "❌ ERROR: graph.obj no existe"
-            exit 1
-          fi
-
-          echo "✅ Graph OK"
-          ls -lh graph
-
-      - name: Upload graph artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: otp-graph
           path: graph
-          retention-days: 30
 
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-
           ssh-keyscan -H 89.167.73.244 >> ~/.ssh/known_hosts
 
-      - name: Upload graph to VPS
+      - name: Deploy graph only
         run: |
-          echo "📤 Subiendo graph.obj al servidor..."
-
           ssh root@89.167.73.244 "mkdir -p /opt/bizkaifest/graph"
+          scp graph/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/
 
-          scp graph/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj
-
-      - name: Restart OTP server
+      - name: Restart OTP safely
         run: |
-          echo "🔄 Reiniciando OTP..."
-
           ssh root@89.167.73.244 "systemctl restart otp"
-      - name: Check graph size
-        run: |
-          ls -lh graph-source
-          ls -lh graph
