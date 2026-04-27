@@ -72,9 +72,8 @@ jobs:
 
           java $JAVA_OPTS -jar otp.jar \
             --build graph-source \
-            --save graph \
-            --serve
-
+            --save graph
+            
       - name: Move generated graph
         run: |
           echo "📦 Moviendo resultado..."
