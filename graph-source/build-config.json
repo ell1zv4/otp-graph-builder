@@ -1,0 +1,21 @@
+{
+  "transitFeeds": [
+    {
+      "type": "gtfs",
+      "source": "bilbobus.zip"
+    },
+    {
+      "type": "gtfs",
+      "source": "Bizkaibus.zip"
+    },
+    {
+      "type": "gtfs",
+      "source": "metro.zip"
+    },
+    {
+      "type": "gtfs",
+      "source": "renfe.zip"
+    }
+  ],
+  "interliningTransferGenerator": false
+}

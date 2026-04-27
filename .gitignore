@@ -1,0 +1,12 @@
+# OTP build output
+graph/
+otp.jar
+
+# large raw data (NO subir a git)
+graph-source/test/
+graph-source/**/*.pbf
+graph-source/**/*.zip
+
+# OS junk
+.DS_Store
+*.log

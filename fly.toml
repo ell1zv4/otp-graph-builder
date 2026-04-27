@@ -1,0 +1,28 @@
+app = 'otp-fiesta-bizkaifest'
+primary_region = 'cdg'
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+  # ⚡ mejor para servicios tipo API pesada (OTP)
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  # 🔥 mejora estabilidad bajo carga
+  concurrency = 80
+  timeout = 300
+
+  processes = ['app']
+
+# 🚀 más CPU + RAM (OTP lo necesita de verdad)
+[[vm]]
+  memory = '4gb'
+  cpus = 2
+
+# 🧠 recomendado para servicios con estado (OTP + graph)
+[metrics]
+  port = 8080

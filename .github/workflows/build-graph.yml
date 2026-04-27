@@ -1,0 +1,46 @@
+name: Build OTP Graph
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'graph-source/**'
+      - 'otp.jar'
+
+jobs:
+  build-graph:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Check memory
+        run: free -h
+
+      - name: Clean previous graph
+        run: rm -rf graph
+
+      - name: Create graph directory
+        run: mkdir -p graph
+
+      - name: Build OTP graph
+        run: |
+          java -Xmx6G -XX:+UseG1GC -jar otp.jar \
+            --build graph-source \
+            --save graph/graph.obj
+
+      - name: Verify output
+        run: ls -lh graph
+
+      - name: Upload graph artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: otp-graph
+          path: graph
