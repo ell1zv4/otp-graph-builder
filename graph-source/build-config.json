@@ -13,6 +13,6 @@
     "streetRoutingTimeoutSeconds": 600,
     "maxTransferDuration": 7200,
     "transitServiceStartTime": "2024-01-01",
-    "maxWalkDistance": 3000
+    "maxWalkDistance": 1000
   }
 }
