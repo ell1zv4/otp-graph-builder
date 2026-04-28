@@ -65,7 +65,7 @@ jobs:
           set -e
           echo "🚀 Construyendo grafo OTP..."
           ls -lah graph-source
-          java $JAVA_OPTS -jar otp.jar --build graph-source --save 
+          java $JAVA_OPTS -jar otp.jar --build graph-source --save graph-source
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
