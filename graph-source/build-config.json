@@ -1,12 +1,12 @@
 {
-  "osm": [
-    {
-      "source": "pais-vasco-latest.osm.pbf"
-    }
-  ],
+  "osm": [{ "source": "pais-vasco-latest.osm.pbf" }],
   "transitFeeds": [
     { "type": "gtfs", "source": "1130.zip" },
     { "type": "gtfs", "source": "1262.zip" },
     { "type": "gtfs", "source": "1267.zip" }
-  ]
+  ],
+  "streetLinking": {
+    "maxLinkDistance": 1000,
+    "maxStopToShapeSnapDistance": 500
+  }
 }
