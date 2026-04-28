@@ -8,10 +8,5 @@
     { "type": "gtfs", "source": "1130.zip" },
     { "type": "gtfs", "source": "1262.zip" },
     { "type": "gtfs", "source": "1267.zip" }
-  ],
-  "graphBuild": {
-    "maxWalkDistance": 1000,
-    "maxTransferDuration": 7200,
-    "transitServiceStart": "2024-01-01"
-  }
+  ]
 }
