@@ -1,23 +1,14 @@
 {
   "osm": [
     {
-      "source": "euskalherria.osm.pbf"
+      "source": "pais-vasco-latest.osm.pbf"
     }
   ],
   "transitFeeds": [
-    {
-      "type": "gtfs",
-      "source": "1130.zip"
-    },
-    {
-      "type": "gtfs",
-      "source": "1262.zip"
-    },
-    {
-      "type": "gtfs",
-      "source": "1267.zip"
-    }
-  ],
+    { "type": "gtfs", "source": "1130.zip" },
+    { "type": "gtfs", "source": "1262.zip" },
+    { "type": "gtfs", "source": "1267.zip" }
+  ]
   "config": {
     "streetRoutingTimeoutSeconds": 600,
     "maxTransferDuration": 7200,
