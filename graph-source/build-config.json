@@ -10,9 +10,10 @@
     { "type": "gtfs", "source": "1267.zip" }
   ],
   "config": {
-    "streetRoutingTimeoutSeconds": 600,
-    "maxTransferDuration": 7200,
-    "transitServiceStartTime": "2024-01-01",
-    "maxWalkDistance": 1000
-  }
+    "maxWalkDistance": 1000,
+    "walkReluctance": 2.5,
+    "transferPenalty": 300,
+    "boardCost": 600,
+    "waitReluctance": 1.5
+}
 }
