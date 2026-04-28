@@ -9,11 +9,9 @@
     { "type": "gtfs", "source": "1262.zip" },
     { "type": "gtfs", "source": "1267.zip" }
   ],
-  "config": {
+  "graphBuild": {
     "maxWalkDistance": 1000,
-    "walkReluctance": 2.5,
-    "transferPenalty": 300,
-    "boardCost": 600,
-    "waitReluctance": 1.5
-}
+    "maxTransferDuration": 7200,
+    "transitServiceStart": "2024-01-01"
+  }
 }
