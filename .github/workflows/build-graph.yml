@@ -38,7 +38,7 @@ jobs:
           mkdir -p graph-source
           mkdir -p graph
 
-      - name: Download GTFS (fixed names) + OSM
+      - name: Download GTFS + OSM
         env:
           API_KEY: ${{ secrets.NAP_API_KEY }}
         run: |
@@ -61,28 +61,27 @@ jobs:
             fi
           }
 
-          # GTFS (renombrados correctamente)
           download "https://nap.transportes.gob.es/api/Fichero/download/1130" "1130.zip"
           download "https://nap.transportes.gob.es/api/Fichero/download/1262" "1262.zip"
           download "https://nap.transportes.gob.es/api/Fichero/download/1267" "1267.zip"
           download "https://nap.transportes.gob.es/api/Fichero/download/1460" "1460.zip"
-          download "https://nap.transportes.gob.es/api/Fichero/download/1264" "1264.zip" # Funicular Artxanda
-          download "https://nap.transportes.gob.es/api/Fichero/download/1133" "1133.zip" # Alsa
+          download "https://nap.transportes.gob.es/api/Fichero/download/1264" "1264.zip"
+          download "https://nap.transportes.gob.es/api/Fichero/download/1133" "1133.zip"
 
-          # OSM
           curl -L "https://download.geofabrik.de/europe/spain/pais-vasco-latest.osm.pbf" -o "pais-vasco-latest.osm.pbf"
 
           ls -lah
-      - name: Fix ALL GTFS (remove block_id)
+
+      - name: Fix GTFS (remove block_id safely)
         run: |
           cd graph-source
-      
+
           for f in *.zip; do
             echo "🔧 Fixing $f"
-      
+
             mkdir tmp_gtfs
             unzip -q "$f" -d tmp_gtfs
-      
+
             if [ -f tmp_gtfs/trips.txt ]; then
               awk -F, 'BEGIN{OFS=","}
               NR==1{
@@ -92,23 +91,31 @@ jobs:
                 if(col) $col=""
                 print
               }' tmp_gtfs/trips.txt > tmp_gtfs/trips_fixed.txt
-      
+
               mv tmp_gtfs/trips_fixed.txt tmp_gtfs/trips.txt
             fi
-      
+
             cd tmp_gtfs
             zip -qr "../$f" .
             cd ..
-      
+
             rm -rf tmp_gtfs
           done
 
       - name: Build OTP graph
         run: |
           set -e
-          echo "🚀 Construyendo grafo OTP..."
+          echo "🚀 Building OTP graph..."
           ls -lah graph-source
-          java $JAVA_OPTS -jar otp.jar --build --save graph-source
+
+          java $JAVA_OPTS -jar otp.jar \
+            --build graph-source \
+            --save graph
+
+      - name: Verify graph output
+        run: |
+          ls -lah graph
+          test -f graph/graph.obj || (echo "❌ graph.obj not found" && exit 1)
 
       - name: Upload graph artifact
         uses: actions/upload-artifact@v4
@@ -127,7 +134,12 @@ jobs:
       - name: Upload graph to VPS
         run: |
           ssh root@89.167.73.244 "mkdir -p /opt/bizkaifest/graph"
-          scp graph-source/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj
+
+          scp graph/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj
+
+      - name: Upload router config (IMPORTANT FIX)
+        run: |
+          scp graph-source/router-config.json root@89.167.73.244:/opt/bizkaifest/graph/router-config.json
 
       - name: Restart OTP server
         run: |
