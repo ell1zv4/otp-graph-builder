@@ -73,38 +73,35 @@ jobs:
           curl -L "https://download.geofabrik.de/europe/spain/pais-vasco-latest.osm.pbf" -o "pais-vasco-latest.osm.pbf"
 
           ls -lah
-      - name: Fix Metro Bilbao GTFS (1267)
+      - name: Fix ALL GTFS (remove block_id)
         run: |
           cd graph-source
       
-          rm -rf tmp_1267 fixed_1267.zip
+          for f in *.zip; do
+            echo "🔧 Fixing $f"
       
-          unzip 1267.zip -d tmp_1267
+            mkdir tmp_gtfs
+            unzip -q "$f" -d tmp_gtfs
       
-          # eliminar completamente la columna block_id
-          awk -F, 'BEGIN{OFS=","}
-          NR==1{
-            for(i=1;i<=NF;i++){
-              if($i=="block_id") col=i
-            }
-          }
-          {
-            if(col){
-              for(i=col;i<NF;i++) $i=$(i+1)
-              NF=NF-1
-            }
-            print
-          }' tmp_1267/trips.txt > tmp_1267/trips_fixed.txt
+            if [ -f tmp_gtfs/trips.txt ]; then
+              awk -F, 'BEGIN{OFS=","}
+              NR==1{
+                for(i=1;i<=NF;i++) if($i=="block_id") col=i
+              }
+              {
+                if(col) $col=""
+                print
+              }' tmp_gtfs/trips.txt > tmp_gtfs/trips_fixed.txt
       
-          mv tmp_1267/trips_fixed.txt tmp_1267/trips.txt
+              mv tmp_gtfs/trips_fixed.txt tmp_gtfs/trips.txt
+            fi
       
-          # crear ZIP limpio (NO actualizar el anterior)
-          cd tmp_1267
-          zip -r ../fixed_1267.zip .
-          cd ..
+            cd tmp_gtfs
+            zip -qr "../$f" .
+            cd ..
       
-          mv fixed_1267.zip 1267.zip
-          rm -rf tmp_1267
+            rm -rf tmp_gtfs
+          done
       
           echo "✅ 1267.zip reparado correctamente"
 
