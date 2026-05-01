@@ -66,6 +66,7 @@ jobs:
           download "https://nap.transportes.gob.es/api/Fichero/download/1262" "1262.zip"
           download "https://nap.transportes.gob.es/api/Fichero/download/1267" "1267.zip"
           download "https://nap.transportes.gob.es/api/Fichero/download/1460" "1460.zip"
+          download "https://nap.transportes.gob.es/api/Fichero/download/1264" "1264.zip"
 
           # OSM
           curl -L "https://download.geofabrik.de/europe/spain/pais-vasco-latest.osm.pbf" -o "pais-vasco-latest.osm.pbf"
