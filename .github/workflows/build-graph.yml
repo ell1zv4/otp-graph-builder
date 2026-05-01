@@ -75,6 +75,9 @@ jobs:
           ls -lah
       - name: Fix Metro Bilbao GTFS (1267)
         run: |
+          set -e
+          cd graph-source
+      
           unzip 1267.zip -d tmp_1267
       
           # eliminar block_id (rompe OTP)
