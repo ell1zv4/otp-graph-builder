@@ -79,35 +79,17 @@ jobs:
       
           unzip 1267.zip -d tmp_1267
       
-          # eliminar completamente la columna block_id
+          # eliminar COMPLETAMENTE la columna block_id
           awk -F, 'BEGIN{OFS=","}
-          NR==1 {
-            for(i=1;i<=NF;i++) {
-              if($i!="block_id") {
-                header[++c]=$i
-              } else {
-                col=i
-              }
-            }
-            for(i=1;i<=c;i++) {
-              printf header[i]
-              if(i<c) printf OFS
-            }
-            printf "\n"
-            next
+          NR==1{
+            for(i=1;i<=NF;i++) if($i=="block_id") col=i
           }
           {
-            c2=0
-            for(i=1;i<=NF;i++) {
-              if(i!=col) {
-                row[++c2]=$i
+            for(i=1;i<=NF;i++){
+              if(i!=col){
+                printf "%s%s", $i, (i==NF || (i==NF-1 && col==NF) ? ORS : OFS)
               }
             }
-            for(i=1;i<=c2;i++) {
-              printf row[i]
-              if(i<c2) printf OFS
-            }
-            printf "\n"
           }' tmp_1267/trips.txt > tmp_1267/trips_fixed.txt
       
           mv tmp_1267/trips_fixed.txt tmp_1267/trips.txt
