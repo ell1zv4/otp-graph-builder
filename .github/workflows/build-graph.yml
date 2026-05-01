@@ -77,28 +77,36 @@ jobs:
         run: |
           cd graph-source
       
+          rm -rf tmp_1267 fixed_1267.zip
+      
           unzip 1267.zip -d tmp_1267
       
-          # eliminar COMPLETAMENTE la columna block_id
+          # eliminar completamente la columna block_id
           awk -F, 'BEGIN{OFS=","}
           NR==1{
-            for(i=1;i<=NF;i++) if($i=="block_id") col=i
+            for(i=1;i<=NF;i++){
+              if($i=="block_id") col=i
+            }
           }
           {
-            for(i=1;i<=NF;i++){
-              if(i!=col){
-                printf "%s%s", $i, (i==NF || (i==NF-1 && col==NF) ? ORS : OFS)
-              }
+            if(col){
+              for(i=col;i<NF;i++) $i=$(i+1)
+              NF=NF-1
             }
+            print
           }' tmp_1267/trips.txt > tmp_1267/trips_fixed.txt
       
           mv tmp_1267/trips_fixed.txt tmp_1267/trips.txt
       
+          # crear ZIP limpio (NO actualizar el anterior)
           cd tmp_1267
-          zip -r ../1267.zip .
+          zip -r ../fixed_1267.zip .
           cd ..
       
+          mv fixed_1267.zip 1267.zip
           rm -rf tmp_1267
+      
+          echo "✅ 1267.zip reparado correctamente"
 
       - name: Build OTP graph
         run: |
