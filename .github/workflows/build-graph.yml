@@ -73,6 +73,26 @@ jobs:
           curl -L "https://download.geofabrik.de/europe/spain/pais-vasco-latest.osm.pbf" -o "pais-vasco-latest.osm.pbf"
 
           ls -lah
+      - name: Fix Metro Bilbao GTFS (1267)
+        run: |
+          unzip 1267.zip -d tmp_1267
+      
+          # eliminar block_id (rompe OTP)
+          awk -F, 'BEGIN{OFS=","} NR==1{
+            for(i=1;i<=NF;i++) if($i=="block_id") col=i
+          }
+          {
+            if(col) $col=""
+            print
+          }' tmp_1267/trips.txt > tmp_1267/trips_fixed.txt
+      
+          mv tmp_1267/trips_fixed.txt tmp_1267/trips.txt
+      
+          cd tmp_1267
+          zip -r ../1267.zip .
+          cd ..
+      
+          rm -rf tmp_1267
 
       - name: Build OTP graph
         run: |
