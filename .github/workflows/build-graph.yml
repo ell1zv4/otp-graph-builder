@@ -102,8 +102,6 @@ jobs:
       
             rm -rf tmp_gtfs
           done
-      
-          echo "✅ 1267.zip reparado correctamente"
 
       - name: Build OTP graph
         run: |
