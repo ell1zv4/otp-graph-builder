@@ -1,4 +1,8 @@
-HEADER:apikey=7badbce5-8964-402a-9d0a-dd7638586426|https://nap.transportes.gob.es/api/Fichero/download/1267
-HEADER:apikey=7badbce5-8964-402a-9d0a-dd7638586426|https://nap.transportes.gob.es/api/Fichero/download/1262
-HEADER:apikey=7badbce5-8964-402a-9d0a-dd7638586426|https://nap.transportes.gob.es/api/Fichero/download/1130
+# Deprecated: keep NAP API keys in the environment only.
+# Use resolve_gtfs_sources.py to discover the latest GTFS resource ids.
+#
+# Example:
+#   API_KEY=... python3 graph-source/resolve_gtfs_sources.py --output-dir graph-source
+#
+# OSM source:
 https://download.geofabrik.de/europe/spain/pais-vasco-latest.osm.pbf

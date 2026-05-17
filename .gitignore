@@ -6,6 +6,8 @@ otp.jar
 graph-source/test/
 graph-source/**/*.pbf
 graph-source/**/*.zip
+graph-source/resolved-sources.json
+graph-source/__pycache__/
 
 # OS junk
 .DS_Store

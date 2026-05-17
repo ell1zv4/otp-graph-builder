@@ -1,9 +1,12 @@
 {
   "osm": [{ "source": "pais-vasco-latest.osm.pbf" }],
   "transitFeeds": [
-    { "type": "gtfs", "source": "1130.zip" },
-    { "type": "gtfs", "source": "1262.zip" },
-    { "type": "gtfs", "source": "1267.zip" }
+    { "type": "gtfs", "source": "bilbobus.zip" },
+    { "type": "gtfs", "source": "bizkaibus.zip" },
+    { "type": "gtfs", "source": "metro_bilbao.zip" },
+    { "type": "gtfs", "source": "renfe_cercanias.zip" },
+    { "type": "gtfs", "source": "funicular_artxanda.zip" },
+    { "type": "gtfs", "source": "alsa_autobuses.zip" }
   ],
   "streetLinking": {
     "maxLinkDistance": 1000,
