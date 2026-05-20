@@ -42,7 +42,7 @@ jobs:
         env:
           API_KEY: ${{ secrets.NAP_API_KEY }}
         run: |
-          set -e
+          set -euo pipefail
           python3 graph-source/resolve_gtfs_sources.py \
             --output-dir graph-source \
             --metadata-path graph-source/resolved-sources.json
@@ -55,6 +55,7 @@ jobs:
 
       - name: Fix ALL GTFS (remove block_id)
         run: |
+          set -euo pipefail
           cd graph-source
 
           for f in *.zip; do
@@ -83,32 +84,121 @@ jobs:
             rm -rf tmp_gtfs
           done
 
+      - name: Validate resolved sources
+        run: |
+          set -euo pipefail
+          bash graph-source/validate_sources.sh
+
       - name: Build OTP graph
         run: |
-          set -e
+          set -euo pipefail
           echo "Building OTP graph..."
           ls -lah graph-source
           java $JAVA_OPTS -jar otp.jar --build --save graph-source
 
+      - name: Verify graph artifact
+        run: |
+          set -euo pipefail
+          test -s graph-source/graph.obj
+          ls -lh graph-source/graph.obj
+
+      - name: Smoke test built graph locally
+        run: |
+          set -euo pipefail
+
+          java $JAVA_OPTS \
+            -Dorg.opentripplanner.http.bindAddress=127.0.0.1 \
+            -jar otp.jar \
+            --load graph-source \
+            --serve > otp-smoke.log 2>&1 &
+          OTP_SERVER_PID=$!
+
+          cleanup() {
+            if kill -0 "$OTP_SERVER_PID" >/dev/null 2>&1; then
+              kill "$OTP_SERVER_PID" >/dev/null 2>&1 || true
+              wait "$OTP_SERVER_PID" >/dev/null 2>&1 || true
+            fi
+          }
+
+          trap cleanup EXIT
+
+          if ! python3 graph-source/smoke_test_otp.py --base-url http://127.0.0.1:8080; then
+            cat otp-smoke.log
+            exit 1
+          fi
+
       - name: Upload graph artifact
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: otp-graph
-          path: graph
+          name: otp-graph-build
+          if-no-files-found: ignore
+          path: |
+            graph-source/graph.obj
+            graph-source/resolved-sources.json
+            graph-source/build-config.json
+            otp-smoke.log
           retention-days: 30
 
       - name: Setup SSH
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 89.167.73.244 >> ~/.ssh/known_hosts
 
-      - name: Upload graph to VPS
+      - name: Upload candidate graph to VPS
         run: |
+          set -euo pipefail
           ssh root@89.167.73.244 "mkdir -p /opt/bizkaifest/graph"
-          scp graph-source/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj
+          scp graph-source/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj.candidate
 
-      - name: Restart OTP server
+      - name: Activate candidate graph with rollback
         run: |
-          ssh root@89.167.73.244 "systemctl restart otp"
+          set -euo pipefail
+          ssh root@89.167.73.244 'bash -s' <<'EOF'
+          set -uo pipefail
+
+          REMOTE_GRAPH_DIR="/opt/bizkaifest/graph"
+          REMOTE_ACTIVE_GRAPH="$REMOTE_GRAPH_DIR/graph.obj"
+          REMOTE_CANDIDATE_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.candidate"
+          REMOTE_BACKUP_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.last-known-good"
+          REMOTE_HEALTH_URL="http://127.0.0.1:8080/actuator/health"
+
+          mkdir -p "$REMOTE_GRAPH_DIR"
+          test -s "$REMOTE_CANDIDATE_GRAPH"
+
+          if [ -f "$REMOTE_ACTIVE_GRAPH" ]; then
+            cp -f "$REMOTE_ACTIVE_GRAPH" "$REMOTE_BACKUP_GRAPH"
+          fi
+
+          activate_candidate() {
+            mv -f "$REMOTE_CANDIDATE_GRAPH" "$REMOTE_ACTIVE_GRAPH"
+            if ! systemctl restart otp; then
+              return 1
+            fi
+
+            for attempt in $(seq 1 20); do
+              if curl -fsS "$REMOTE_HEALTH_URL" >/dev/null; then
+                return 0
+              fi
+              sleep 3
+            done
+
+            return 1
+          }
+
+          if activate_candidate; then
+            exit 0
+          fi
+
+          echo "OTP did not become healthy with the candidate graph." >&2
+          if [ -f "$REMOTE_BACKUP_GRAPH" ]; then
+            cp -f "$REMOTE_BACKUP_GRAPH" "$REMOTE_ACTIVE_GRAPH"
+            systemctl restart otp || true
+          fi
+
+          journalctl -u otp -n 80 --no-pager || true
+          exit 1
+          EOF
