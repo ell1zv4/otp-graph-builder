@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import html
 import json
 import os
@@ -39,7 +40,7 @@ UPDATED_RE = re.compile(
 )
 RESOURCE_ID_RE = re.compile(
     r'<div class="card-header text-left container-Blue card-title ">\s*'
-    r"GTFS(?:-ZIP)?"
+    r"GTFS(?:-ZIP)?(?!-)"
     r"[\s\S]{0,2000}?"
     r"modal-metadatos-(?P<resource_id>\d+)",
     re.IGNORECASE,
@@ -169,6 +170,25 @@ def parse_candidates(list_html: str, feed: FeedDefinition) -> list[dict[str, str
     return candidates
 
 
+def parse_updated_date(value: str | None) -> dt.date | None:
+    if not value:
+        return None
+    try:
+        return dt.datetime.strptime(value, "%d/%m/%Y").date()
+    except ValueError:
+        return None
+
+
+def select_best_candidate(candidates: Iterable[dict[str, str]]) -> dict[str, str]:
+    return max(
+        candidates,
+        key=lambda candidate: (
+            parse_updated_date(candidate.get("updated")) or dt.date.min,
+            int(candidate.get("detail_id") or "0"),
+        ),
+    )
+
+
 def extract_resource_id(detail_html: str, detail_url: str) -> str:
     match = RESOURCE_ID_RE.search(detail_html)
     if match is None:
@@ -185,7 +205,7 @@ def resolve_feed(feed: FeedDefinition) -> dict[str, str]:
             f"No NAP candidates matched {feed.name!r}. URL inspected: {list_url}"
         )
 
-    selected = candidates[0].copy()
+    selected = select_best_candidate(candidates).copy()
     detail_html = fetch_text(selected["detail_url"])
     selected["resource_id"] = extract_resource_id(detail_html, selected["detail_url"])
     selected["name"] = feed.name
