@@ -147,17 +147,29 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 89.167.73.244 >> ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<'EOF'
+          Host bizkaifest-vps
+            HostName 89.167.73.244
+            User root
+            IdentityFile ~/.ssh/id_ed25519
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+            TCPKeepAlive yes
+            ConnectTimeout 15
+            StrictHostKeyChecking yes
+          EOF
+          chmod 600 ~/.ssh/config
 
       - name: Upload candidate graph to VPS
         run: |
           set -euo pipefail
-          ssh root@89.167.73.244 "mkdir -p /opt/bizkaifest/graph"
-          scp graph-source/graph.obj root@89.167.73.244:/opt/bizkaifest/graph/graph.obj.candidate
+          ssh bizkaifest-vps "mkdir -p /opt/bizkaifest/graph"
+          scp graph-source/graph.obj bizkaifest-vps:/opt/bizkaifest/graph/graph.obj.candidate
 
       - name: Activate candidate graph with rollback
         run: |
           set -euo pipefail
-          ssh root@89.167.73.244 'bash -s' <<'EOF'
+          ssh bizkaifest-vps 'bash -s' <<'EOF'
           set -uo pipefail
 
           REMOTE_GRAPH_DIR="/opt/bizkaifest/graph"
@@ -192,6 +204,7 @@ jobs:
             }
 
             for attempt in $(seq 1 60); do
+              echo "Waiting for OTP readiness (attempt ${attempt}/60)..."
               if otp_is_ready; then
                 if [ "$restart_exit" -ne 0 ]; then
                   echo "OTP restart returned $restart_exit but the service recovered and answered GraphQL."
