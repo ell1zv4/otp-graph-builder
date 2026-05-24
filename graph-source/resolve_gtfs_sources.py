@@ -11,7 +11,9 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import unicodedata
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -23,6 +25,8 @@ USER_AGENT = "otp-graph-builder/1.0"
 NAP_BASE_URL = "https://nap.transportes.gob.es"
 NAP_LIST_URL = f"{NAP_BASE_URL}/Files/List"
 NAP_DOWNLOAD_URL = f"{NAP_BASE_URL}/api/Fichero/download"
+RETRYABLE_HTTP_STATUSES = {408, 425, 429, 500, 502, 503, 504}
+MAX_FETCH_ATTEMPTS = 5
 
 LIST_CARD_RE = re.compile(
     r'<a class="item-listado card mb-3" href="\./Detail/(?P<detail_id>\d+)">'
@@ -139,10 +143,41 @@ def build_list_url(feed: FeedDefinition) -> str:
     return f"{NAP_LIST_URL}?{urllib.parse.urlencode(params)}"
 
 
+def is_retryable_error(error: Exception) -> bool:
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in RETRYABLE_HTTP_STATUSES
+    return isinstance(error, urllib.error.URLError)
+
+
+def fetch_bytes(
+    request: urllib.request.Request,
+    *,
+    timeout: int,
+    attempts: int = MAX_FETCH_ATTEMPTS,
+) -> bytes:
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.read()
+        except (urllib.error.HTTPError, urllib.error.URLError) as error:
+            last_error = error
+            if attempt >= attempts or not is_retryable_error(error):
+                raise
+            delay_seconds = min(2 ** (attempt - 1), 8)
+            print(
+                f"[retry] {request.full_url} -> {error} "
+                f"(attempt {attempt}/{attempts}, waiting {delay_seconds}s)",
+                file=sys.stderr,
+            )
+            time.sleep(delay_seconds)
+    assert last_error is not None
+    raise last_error
+
+
 def fetch_text(url: str) -> str:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return response.read().decode("utf-8", errors="replace")
+    return fetch_bytes(request, timeout=60).decode("utf-8", errors="replace")
 
 
 def parse_candidates(list_html: str, feed: FeedDefinition) -> list[dict[str, str]]:
@@ -232,9 +267,7 @@ def download_resource(resource_id: str, destination: Path, api_key: str) -> None
         temporary_path = Path(temporary.name)
 
     try:
-        with urllib.request.urlopen(request, timeout=120) as response:
-            with temporary_path.open("wb") as sink:
-                shutil.copyfileobj(response, sink)
+        temporary_path.write_bytes(fetch_bytes(request, timeout=120))
         validate_gtfs_zip(temporary_path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(temporary_path), destination)

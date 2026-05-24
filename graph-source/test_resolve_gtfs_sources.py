@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import io
 import importlib.util
 import pathlib
 import sys
 import unittest
+import urllib.error
+from unittest import mock
 
 
 SCRIPT_PATH = pathlib.Path(__file__).with_name("resolve_gtfs_sources.py")
@@ -61,6 +64,63 @@ class ResolveGtfsSourcesTest(unittest.TestCase):
         )
 
         self.assertEqual(resource_id, "1262")
+
+    def test_fetch_bytes_retries_retryable_http_errors(self) -> None:
+        request = MODULE.urllib.request.Request("https://example.com/feed")
+        attempts: list[int] = []
+
+        class FakeResponse:
+            def __enter__(self) -> "FakeResponse":
+                return self
+
+            def __exit__(self, exc_type, exc, tb) -> None:
+                return None
+
+            def read(self) -> bytes:
+                return b"ok"
+
+        def fake_urlopen(*args, **kwargs):
+            attempts.append(len(attempts) + 1)
+            if len(attempts) < 3:
+                raise urllib.error.HTTPError(
+                    request.full_url,
+                    500,
+                    "Internal Server Error",
+                    hdrs=None,
+                    fp=io.BytesIO(b""),
+                )
+            return FakeResponse()
+
+        with (
+            mock.patch.object(MODULE.urllib.request, "urlopen", side_effect=fake_urlopen),
+            mock.patch.object(MODULE.time, "sleep"),
+        ):
+            payload = MODULE.fetch_bytes(request, timeout=5, attempts=3)
+
+        self.assertEqual(payload, b"ok")
+        self.assertEqual(len(attempts), 3)
+
+    def test_fetch_bytes_does_not_retry_non_retryable_http_errors(self) -> None:
+        request = MODULE.urllib.request.Request("https://example.com/feed")
+
+        with (
+            mock.patch.object(
+                MODULE.urllib.request,
+                "urlopen",
+                side_effect=urllib.error.HTTPError(
+                    request.full_url,
+                    404,
+                    "Not Found",
+                    hdrs=None,
+                    fp=io.BytesIO(b""),
+                ),
+            ),
+            mock.patch.object(MODULE.time, "sleep") as sleep_mock,
+        ):
+            with self.assertRaises(urllib.error.HTTPError):
+                MODULE.fetch_bytes(request, timeout=5, attempts=3)
+
+        sleep_mock.assert_not_called()
 
 
 if __name__ == "__main__":

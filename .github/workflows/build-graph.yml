@@ -176,6 +176,7 @@ jobs:
           REMOTE_ACTIVE_GRAPH="$REMOTE_GRAPH_DIR/graph.obj"
           REMOTE_CANDIDATE_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.candidate"
           REMOTE_BACKUP_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.last-known-good"
+          REMOTE_PREVIOUS_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.previous"
           REMOTE_GRAPHQL_URL="http://127.0.0.1:8080/otp/gtfs/v1"
           REMOTE_GRAPHQL_PAYLOAD='{"query":"query SmokeStops($name: String!) { stops(name: $name) { name } }","variables":{"name":"Moyua"}}'
 
@@ -183,7 +184,7 @@ jobs:
           test -s "$REMOTE_CANDIDATE_GRAPH"
 
           if [ -f "$REMOTE_ACTIVE_GRAPH" ]; then
-            cp -f "$REMOTE_ACTIVE_GRAPH" "$REMOTE_BACKUP_GRAPH"
+            cp -f "$REMOTE_ACTIVE_GRAPH" "$REMOTE_PREVIOUS_GRAPH"
           fi
 
           activate_candidate() {
@@ -209,6 +210,8 @@ jobs:
                 if [ "$restart_exit" -ne 0 ]; then
                   echo "OTP restart returned $restart_exit but the service recovered and answered GraphQL."
                 fi
+                cp -f "$REMOTE_ACTIVE_GRAPH" "$REMOTE_BACKUP_GRAPH"
+                rm -f "$REMOTE_PREVIOUS_GRAPH"
                 return 0
               fi
               sleep 5
@@ -227,6 +230,11 @@ jobs:
           echo "OTP did not become healthy with the candidate graph." >&2
           if [ -f "$REMOTE_BACKUP_GRAPH" ]; then
             cp -f "$REMOTE_BACKUP_GRAPH" "$REMOTE_ACTIVE_GRAPH"
+          elif [ -f "$REMOTE_PREVIOUS_GRAPH" ]; then
+            cp -f "$REMOTE_PREVIOUS_GRAPH" "$REMOTE_ACTIVE_GRAPH"
+          fi
+
+          if [ -f "$REMOTE_ACTIVE_GRAPH" ]; then
             systemctl restart otp || true
           fi
 
