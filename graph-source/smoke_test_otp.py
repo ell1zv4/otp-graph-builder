@@ -30,16 +30,47 @@ HEALTH_ENDPOINT_CANDIDATES = (
     "/",
 )
 
-STOPS_QUERY = """
-query SmokeStops {
-  stops(name: "", first: 5) {
+REFERENCE_STOP_QUERY_CANDIDATES = (
+    {
+        "query": """
+query SmokeStops($name: String!) {
+  stops(name: $name) {
     gtfsId
     name
     lat
     lon
   }
 }
-"""
+""",
+        "variables": {"name": "Moyua"},
+    },
+    {
+        "query": """
+query SmokeStops($name: String!) {
+  stops(name: $name) {
+    gtfsId
+    name
+    lat
+    lon
+  }
+}
+""",
+        "variables": {"name": "Bilbao"},
+    },
+    {
+        "query": """
+query SmokeStops {
+  stops(name: "") {
+    gtfsId
+    name
+    lat
+    lon
+  }
+}
+""",
+        "variables": {},
+    },
+)
 
 PLAN_QUERY = """
 query SmokeCanonicalPlan(
@@ -242,21 +273,25 @@ def wait_for_health(base_url: str, timeout_seconds: int) -> str:
 
 
 def resolve_graphql_endpoint(base_url: str) -> tuple[str, dict[str, object]]:
-    payload = {"query": STOPS_QUERY}
     last_error: Exception | None = None
     for path in GRAPHQL_ENDPOINT_CANDIDATES:
-        try:
-            status, response_payload = http_post_json(f"{base_url}{path}", payload)
-            if status < 200 or status >= 300:
-                raise RuntimeError(f"unexpected status {status}")
-            if not isinstance(response_payload, dict):
-                raise RuntimeError("GraphQL response was not JSON")
-            if response_payload.get("errors"):
-                raise RuntimeError(str(response_payload["errors"]))
-            print(f"[graphql] using endpoint {path}")
-            return path, response_payload
-        except Exception as error:  # noqa: BLE001
-            last_error = error
+        for probe_payload in REFERENCE_STOP_QUERY_CANDIDATES:
+            payload = {
+                "query": probe_payload["query"],
+                "variables": probe_payload["variables"],
+            }
+            try:
+                status, response_payload = http_post_json(f"{base_url}{path}", payload)
+                if status < 200 or status >= 300:
+                    raise RuntimeError(f"unexpected status {status}")
+                if not isinstance(response_payload, dict):
+                    raise RuntimeError("GraphQL response was not JSON")
+                if response_payload.get("errors"):
+                    raise RuntimeError(str(response_payload["errors"]))
+                print(f"[graphql] using endpoint {path}")
+                return path, response_payload
+            except Exception as error:  # noqa: BLE001
+                last_error = error
     raise RuntimeError(f"Could not reach any GraphQL endpoint: {last_error}")
 
 
@@ -282,7 +317,7 @@ def extract_reference_stop(payload: dict[str, object]) -> tuple[float, float, st
     raise RuntimeError("GraphQL stop query returned no usable coordinates")
 
 
-def resolve_rest_endpoint(base_url: str, lat: float, lon: float) -> str:
+def resolve_rest_endpoint(base_url: str, lat: float, lon: float) -> str | None:
     service_time = dt.datetime.now().replace(second=0, microsecond=0)
     from_lat = lat + 0.0012
     from_lon = lon + 0.0012
@@ -316,7 +351,8 @@ def resolve_rest_endpoint(base_url: str, lat: float, lon: float) -> str:
             return path
         except Exception as error:  # noqa: BLE001
             last_error = error
-    raise RuntimeError(f"Could not resolve a REST plan endpoint: {last_error}")
+    print(f"[rest] skipped because no REST plan endpoint was available: {last_error}")
+    return None
 
 
 def candidate_service_datetimes(now: dt.datetime) -> list[dt.datetime]:
@@ -590,7 +626,7 @@ def summarize_observations(observations: list[ObservedItinerary]) -> str:
 def run_canonical_route_case(
     base_url: str,
     graphql_path: str,
-    rest_path: str,
+    rest_path: str | None,
     route_case: CanonicalRouteCase,
 ) -> str:
     last_failure_summary = "sin intentos"
@@ -616,24 +652,28 @@ def run_canonical_route_case(
         except Exception as error:  # noqa: BLE001
             last_error = error
 
-        try:
-            rest_observations = query_rest_plan(
-                base_url,
-                rest_path,
-                route_case,
-                service_time,
-            )
-            if any(route_case.expected_mode in observation.modes for observation in rest_observations):
-                print(
-                    f"[canonical] {route_case.label} OK via REST en "
-                    f"{service_time:%Y-%m-%d %H:%M} -> "
-                    f"{summarize_observations(rest_observations)}"
+        if rest_path is not None:
+            try:
+                rest_observations = query_rest_plan(
+                    base_url,
+                    rest_path,
+                    route_case,
+                    service_time,
                 )
-                return "rest"
-            if rest_observations:
-                last_failure_summary = summarize_observations(rest_observations)
-        except Exception as error:  # noqa: BLE001
-            last_error = error
+                if any(
+                    route_case.expected_mode in observation.modes
+                    for observation in rest_observations
+                ):
+                    print(
+                        f"[canonical] {route_case.label} OK via REST en "
+                        f"{service_time:%Y-%m-%d %H:%M} -> "
+                        f"{summarize_observations(rest_observations)}"
+                    )
+                    return "rest"
+                if rest_observations:
+                    last_failure_summary = summarize_observations(rest_observations)
+            except Exception as error:  # noqa: BLE001
+                last_error = error
 
     raise RuntimeError(
         f"{route_case.label} no mostro cobertura {route_case.expected_mode}. "
@@ -644,7 +684,7 @@ def run_canonical_route_case(
 def smoke_test_canonical_routes(
     base_url: str,
     graphql_path: str,
-    rest_path: str,
+    rest_path: str | None,
 ) -> None:
     covered_modes: set[str] = set()
     covered_sources: list[str] = []

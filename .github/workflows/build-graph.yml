@@ -164,7 +164,8 @@ jobs:
           REMOTE_ACTIVE_GRAPH="$REMOTE_GRAPH_DIR/graph.obj"
           REMOTE_CANDIDATE_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.candidate"
           REMOTE_BACKUP_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.last-known-good"
-          REMOTE_HEALTH_URL="http://127.0.0.1:8080/actuator/health"
+          REMOTE_GRAPHQL_URL="http://127.0.0.1:8080/otp/gtfs/v1"
+          REMOTE_GRAPHQL_PAYLOAD='{"query":"query SmokeStops($name: String!) { stops(name: $name) { name } }","variables":{"name":"Moyua"}}'
 
           mkdir -p "$REMOTE_GRAPH_DIR"
           test -s "$REMOTE_CANDIDATE_GRAPH"
@@ -179,8 +180,19 @@ jobs:
               return 1
             fi
 
+            otp_is_ready() {
+              local response=""
+              response="$(curl -fsS \
+                -H "Content-Type: application/json" \
+                -d "$REMOTE_GRAPHQL_PAYLOAD" \
+                "$REMOTE_GRAPHQL_URL" 2>/dev/null || true)"
+              test -n "$response" || return 1
+              ! printf '%s' "$response" | grep -q '"errors"' || return 1
+              printf '%s' "$response" | grep -q '"data"'
+            }
+
             for attempt in $(seq 1 20); do
-              if curl -fsS "$REMOTE_HEALTH_URL" >/dev/null; then
+              if otp_is_ready; then
                 return 0
               fi
               sleep 3
