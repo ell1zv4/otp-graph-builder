@@ -64,7 +64,11 @@ query SmokeCanonicalPlan(
     walkSpeed: 1.2
     walkReluctance: 2.4
     maxWalkDistance: $maxWalkDistance
-    transportModes: [{ mode: WALK }, { mode: TRANSIT }]
+    transportModes: [
+      { mode: WALK },
+      { mode: TRANSIT },
+      { mode: BICYCLE, qualifier: RENT }
+    ]
   ) {
     itineraries {
       startTime
@@ -91,6 +95,7 @@ query SmokeCanonicalPlan(
 BUS_MODE = "bus"
 METRO_MODE = "metro"
 TRAIN_MODE = "train"
+BIKE_MODE = "bike"
 REQUIRED_CORE_MODES = frozenset({BUS_MODE, METRO_MODE, TRAIN_MODE})
 
 
@@ -412,7 +417,7 @@ def query_rest_plan(
         "toPlace": f"{route_case.destination_lat:.6f},{route_case.destination_lon:.6f}",
         "time": service_time.strftime("%H:%M:%S"),
         "date": service_time.strftime("%Y-%m-%d"),
-        "mode": "TRANSIT,WALK",
+        "mode": "TRANSIT,WALK,BICYCLE_RENT",
         "arriveBy": "false",
         "numItineraries": str(route_case.num_itineraries),
         "searchWindow": str(route_case.search_window_seconds),
@@ -550,6 +555,8 @@ def normalize_mode_name(raw_mode: str) -> str:
         return METRO_MODE
     if any(token in normalized for token in ("RAIL", "TRAIN", "SUBURBAN", "COMMUTER")):
         return TRAIN_MODE
+    if any(token in normalized for token in ("BICYCLE", "BIKE", "CYCLE")):
+        return BIKE_MODE
     if any(token in normalized for token in ("WALK", "FOOT", "PEDESTRIAN")):
         return "walk"
     return normalized.lower()
