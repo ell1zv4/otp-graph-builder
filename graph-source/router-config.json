@@ -1,17 +1,35 @@
 {
+  "updaters": [
+    {
+      "type": "vehicle-rental",
+      "sourceType": "gbfs",
+      "url": "https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bw/gbfs.json",
+      "language": "en",
+      "network": "bizkaibizi",
+      "frequency": "1m",
+      "allowKeepingRentedVehicleAtDestination": false
+    }
+  ],
   "routingDefaults": {
-    "walkSpeed": 1.33,
-    "bikeSpeed": 4.1,
-    "carSpeed": 11.11,
-
-    "walkReluctance": 2.0,
-    "bikeReluctance": 2.0,
-    "carReluctance": 1.0,
-
-    "maxWalkDistance": 1000,
-    "maxBikeDistance": 10000,
-    "maxCarDistance": 50000,
-
-    "numItineraries": 3
+    "numItineraries": 12,
+    "walk": {
+      "speed": 1.33,
+      "reluctance": 2.0
+    },
+    "bicycle": {
+      "speed": 4.1,
+      "reluctance": 2.0,
+      "rental": {
+        "pickupCost": 30,
+        "dropOffTime": "30s",
+        "dropOffCost": 30
+      }
+    },
+    "accessEgress": {
+      "maxDurationForMode": {
+        "WALK": "20m",
+        "BIKE_RENTAL": "30m"
+      }
+    }
   }
 }

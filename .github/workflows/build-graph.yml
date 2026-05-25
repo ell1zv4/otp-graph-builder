@@ -165,6 +165,9 @@ jobs:
           set -euo pipefail
           ssh bizkaifest-vps "mkdir -p /opt/bizkaifest/graph"
           scp graph-source/graph.obj bizkaifest-vps:/opt/bizkaifest/graph/graph.obj.candidate
+          scp graph-source/build-config.json bizkaifest-vps:/opt/bizkaifest/graph/build-config.json.candidate
+          scp graph-source/router-config.json bizkaifest-vps:/opt/bizkaifest/graph/router-config.json.candidate
+          scp graph-source/otp-config.json bizkaifest-vps:/opt/bizkaifest/graph/otp-config.json.candidate
 
       - name: Activate candidate graph with rollback
         run: |
@@ -177,19 +180,46 @@ jobs:
           REMOTE_CANDIDATE_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.candidate"
           REMOTE_BACKUP_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.last-known-good"
           REMOTE_PREVIOUS_GRAPH="$REMOTE_GRAPH_DIR/graph.obj.previous"
+          REMOTE_ACTIVE_BUILD_CONFIG="$REMOTE_GRAPH_DIR/build-config.json"
+          REMOTE_CANDIDATE_BUILD_CONFIG="$REMOTE_GRAPH_DIR/build-config.json.candidate"
+          REMOTE_BACKUP_BUILD_CONFIG="$REMOTE_GRAPH_DIR/build-config.json.last-known-good"
+          REMOTE_PREVIOUS_BUILD_CONFIG="$REMOTE_GRAPH_DIR/build-config.json.previous"
+          REMOTE_ACTIVE_ROUTER_CONFIG="$REMOTE_GRAPH_DIR/router-config.json"
+          REMOTE_CANDIDATE_ROUTER_CONFIG="$REMOTE_GRAPH_DIR/router-config.json.candidate"
+          REMOTE_BACKUP_ROUTER_CONFIG="$REMOTE_GRAPH_DIR/router-config.json.last-known-good"
+          REMOTE_PREVIOUS_ROUTER_CONFIG="$REMOTE_GRAPH_DIR/router-config.json.previous"
+          REMOTE_ACTIVE_OTP_CONFIG="$REMOTE_GRAPH_DIR/otp-config.json"
+          REMOTE_CANDIDATE_OTP_CONFIG="$REMOTE_GRAPH_DIR/otp-config.json.candidate"
+          REMOTE_BACKUP_OTP_CONFIG="$REMOTE_GRAPH_DIR/otp-config.json.last-known-good"
+          REMOTE_PREVIOUS_OTP_CONFIG="$REMOTE_GRAPH_DIR/otp-config.json.previous"
           REMOTE_GRAPHQL_URL="http://127.0.0.1:8080/otp/gtfs/v1"
           REMOTE_GRAPHQL_PAYLOAD='{"query":"query SmokeStops($name: String!) { stops(name: $name) { name } }","variables":{"name":"Moyua"}}'
 
           mkdir -p "$REMOTE_GRAPH_DIR"
           test -s "$REMOTE_CANDIDATE_GRAPH"
+          test -s "$REMOTE_CANDIDATE_BUILD_CONFIG"
+          test -s "$REMOTE_CANDIDATE_ROUTER_CONFIG"
+          test -s "$REMOTE_CANDIDATE_OTP_CONFIG"
 
           if [ -f "$REMOTE_ACTIVE_GRAPH" ]; then
             cp -f "$REMOTE_ACTIVE_GRAPH" "$REMOTE_PREVIOUS_GRAPH"
+          fi
+          if [ -f "$REMOTE_ACTIVE_BUILD_CONFIG" ]; then
+            cp -f "$REMOTE_ACTIVE_BUILD_CONFIG" "$REMOTE_PREVIOUS_BUILD_CONFIG"
+          fi
+          if [ -f "$REMOTE_ACTIVE_ROUTER_CONFIG" ]; then
+            cp -f "$REMOTE_ACTIVE_ROUTER_CONFIG" "$REMOTE_PREVIOUS_ROUTER_CONFIG"
+          fi
+          if [ -f "$REMOTE_ACTIVE_OTP_CONFIG" ]; then
+            cp -f "$REMOTE_ACTIVE_OTP_CONFIG" "$REMOTE_PREVIOUS_OTP_CONFIG"
           fi
 
           activate_candidate() {
             local restart_exit=0
             mv -f "$REMOTE_CANDIDATE_GRAPH" "$REMOTE_ACTIVE_GRAPH"
+            mv -f "$REMOTE_CANDIDATE_BUILD_CONFIG" "$REMOTE_ACTIVE_BUILD_CONFIG"
+            mv -f "$REMOTE_CANDIDATE_ROUTER_CONFIG" "$REMOTE_ACTIVE_ROUTER_CONFIG"
+            mv -f "$REMOTE_CANDIDATE_OTP_CONFIG" "$REMOTE_ACTIVE_OTP_CONFIG"
             systemctl restart otp || restart_exit=$?
 
             otp_is_ready() {
@@ -211,7 +241,13 @@ jobs:
                   echo "OTP restart returned $restart_exit but the service recovered and answered GraphQL."
                 fi
                 cp -f "$REMOTE_ACTIVE_GRAPH" "$REMOTE_BACKUP_GRAPH"
+                cp -f "$REMOTE_ACTIVE_BUILD_CONFIG" "$REMOTE_BACKUP_BUILD_CONFIG"
+                cp -f "$REMOTE_ACTIVE_ROUTER_CONFIG" "$REMOTE_BACKUP_ROUTER_CONFIG"
+                cp -f "$REMOTE_ACTIVE_OTP_CONFIG" "$REMOTE_BACKUP_OTP_CONFIG"
                 rm -f "$REMOTE_PREVIOUS_GRAPH"
+                rm -f "$REMOTE_PREVIOUS_BUILD_CONFIG"
+                rm -f "$REMOTE_PREVIOUS_ROUTER_CONFIG"
+                rm -f "$REMOTE_PREVIOUS_OTP_CONFIG"
                 return 0
               fi
               sleep 5
@@ -230,8 +266,14 @@ jobs:
           echo "OTP did not become healthy with the candidate graph." >&2
           if [ -f "$REMOTE_BACKUP_GRAPH" ]; then
             cp -f "$REMOTE_BACKUP_GRAPH" "$REMOTE_ACTIVE_GRAPH"
+            cp -f "$REMOTE_BACKUP_BUILD_CONFIG" "$REMOTE_ACTIVE_BUILD_CONFIG"
+            cp -f "$REMOTE_BACKUP_ROUTER_CONFIG" "$REMOTE_ACTIVE_ROUTER_CONFIG"
+            cp -f "$REMOTE_BACKUP_OTP_CONFIG" "$REMOTE_ACTIVE_OTP_CONFIG"
           elif [ -f "$REMOTE_PREVIOUS_GRAPH" ]; then
             cp -f "$REMOTE_PREVIOUS_GRAPH" "$REMOTE_ACTIVE_GRAPH"
+            cp -f "$REMOTE_PREVIOUS_BUILD_CONFIG" "$REMOTE_ACTIVE_BUILD_CONFIG"
+            cp -f "$REMOTE_PREVIOUS_ROUTER_CONFIG" "$REMOTE_ACTIVE_ROUTER_CONFIG"
+            cp -f "$REMOTE_PREVIOUS_OTP_CONFIG" "$REMOTE_ACTIVE_OTP_CONFIG"
           fi
 
           if [ -f "$REMOTE_ACTIVE_GRAPH" ]; then
