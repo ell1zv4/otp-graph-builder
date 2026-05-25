@@ -8,8 +8,5 @@
     { "type": "gtfs", "source": "funicular_artxanda.zip" },
     { "type": "gtfs", "source": "alsa_autobuses.zip" }
   ],
-  "streetLinking": {
-    "maxLinkDistance": 1000,
-    "maxStopToShapeSnapDistance": 500
-  }
+  "maxStopToShapeSnapDistance": 500
 }
