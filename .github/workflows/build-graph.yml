@@ -89,6 +89,15 @@ jobs:
           set -euo pipefail
           bash graph-source/validate_sources.sh
 
+      - name: Resolve Moveuskadi realtime feeds
+        run: |
+          set -euo pipefail
+          python3 graph-source/resolve_realtime_sources.py \
+            --router-config graph-source/router-config.json \
+            --metadata-path graph-source/resolved-realtime-sources.json
+          cat graph-source/resolved-realtime-sources.json
+          cat graph-source/router-config.json
+
       - name: Build OTP graph
         run: |
           set -euo pipefail
@@ -136,6 +145,7 @@ jobs:
           path: |
             graph-source/graph.obj
             graph-source/resolved-sources.json
+            graph-source/resolved-realtime-sources.json
             graph-source/build-config.json
             otp-smoke.log
           retention-days: 30

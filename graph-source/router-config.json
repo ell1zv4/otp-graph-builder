@@ -8,6 +8,62 @@
       "network": "bizkaibizi",
       "frequency": "1m",
       "allowKeepingRentedVehicleAtDestination": false
+    },
+    {
+      "type": "vehicle-positions",
+      "frequency": "1m",
+      "url": "https://opendata.euskadi.eus/transport/moveuskadi/bilbobus/gtfsrt_bilbobus_vehicle_positions.pb",
+      "feedId": "bilbobus",
+      "fuzzyTripMatching": true,
+      "features": [
+        "position",
+        "stop-position"
+      ]
+    },
+    {
+      "type": "real-time-alerts",
+      "frequency": "1m",
+      "url": "https://opendata.euskadi.eus/transport/moveuskadi/bizkaibus/gtfsrt_Bizkaibus_alerts.pb",
+      "feedId": "bizkaibus",
+      "fuzzyTripMatching": true
+    },
+    {
+      "type": "stop-time-updater",
+      "frequency": "1m",
+      "backwardsDelayPropagationType": "REQUIRED_NO_DATA",
+      "url": "https://opendata.euskadi.eus/transport/moveuskadi/bizkaibus/gtfsrt_bizkaibus_trip_updates.pb",
+      "feedId": "bizkaibus",
+      "fuzzyTripMatching": true
+    },
+    {
+      "type": "vehicle-positions",
+      "frequency": "1m",
+      "url": "https://opendata.euskadi.eus/transport/moveuskadi/bizkaibus/gtfsrt_Bizkaibus_vehicle_positions.pb",
+      "feedId": "bizkaibus",
+      "fuzzyTripMatching": true,
+      "features": [
+        "position",
+        "stop-position"
+      ]
+    },
+    {
+      "type": "stop-time-updater",
+      "frequency": "1m",
+      "backwardsDelayPropagationType": "REQUIRED_NO_DATA",
+      "url": "https://opendata.euskadi.eus/transport/moveuskadi/metro_bilbao/gtfsrt_metro_bilbao_trip_updates.pb",
+      "feedId": "metro_bilbao",
+      "fuzzyTripMatching": true
+    },
+    {
+      "type": "vehicle-positions",
+      "frequency": "1m",
+      "url": "https://opendata.euskadi.eus/transport/moveuskadi/metro_bilbao/gtfsrt_metro_bilbao_vehicle_positions.pb",
+      "feedId": "metro_bilbao",
+      "fuzzyTripMatching": true,
+      "features": [
+        "position",
+        "stop-position"
+      ]
     }
   ],
   "routingDefaults": {
