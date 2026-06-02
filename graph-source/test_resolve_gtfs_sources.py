@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import io
 import importlib.util
+import json
 import pathlib
 import sys
 import unittest
 import urllib.error
+import urllib.parse
 from unittest import mock
 
 
 SCRIPT_PATH = pathlib.Path(__file__).with_name("resolve_gtfs_sources.py")
+BUILD_CONFIG_PATH = SCRIPT_PATH.with_name("build-config.json")
 SPEC = importlib.util.spec_from_file_location("resolve_gtfs_sources", SCRIPT_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -20,6 +23,25 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ResolveGtfsSourcesTest(unittest.TestCase):
+    def test_all_configured_gtfs_feeds_have_resolver_definition(self) -> None:
+        build_config = json.loads(BUILD_CONFIG_PATH.read_text(encoding="utf-8"))
+        configured_sources = sorted(
+            feed["source"]
+            for feed in build_config["transitFeeds"]
+            if feed.get("type") == "gtfs"
+        )
+        resolved_sources = sorted(feed.output_name for feed in MODULE.FEEDS)
+
+        self.assertEqual(configured_sources, resolved_sources)
+
+    def test_all_feed_searches_request_recent_nap_candidates(self) -> None:
+        for feed in MODULE.FEEDS:
+            with self.subTest(feed=feed.name):
+                url = MODULE.build_list_url(feed)
+                query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+
+                self.assertEqual(query.get("orderby"), ["Recientes"])
+
     def test_select_best_candidate_prefers_newest_update_then_detail_id(self) -> None:
         candidates = [
             {
