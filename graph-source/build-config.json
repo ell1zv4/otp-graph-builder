@@ -1,12 +1,24 @@
 {
   "osm": [{ "source": "pais-vasco-latest.osm.pbf" }],
   "transitFeeds": [
-    { "type": "gtfs", "source": "bilbobus.zip" },
-    { "type": "gtfs", "source": "bizkaibus.zip" },
-    { "type": "gtfs", "source": "metro_bilbao.zip" },
-    { "type": "gtfs", "source": "renfe_cercanias.zip" },
-    { "type": "gtfs", "source": "funicular_artxanda.zip" },
-    { "type": "gtfs", "source": "alsa_autobuses.zip" }
+    { "type": "gtfs", "source": "bilbobus.zip", "feedId": "bilbobus" },
+    { "type": "gtfs", "source": "bizkaibus.zip", "feedId": "bizkaibus" },
+    { "type": "gtfs", "source": "metro_bilbao.zip", "feedId": "metro_bilbao" },
+    {
+      "type": "gtfs",
+      "source": "renfe_cercanias.zip",
+      "feedId": "renfe_cercanias"
+    },
+    {
+      "type": "gtfs",
+      "source": "funicular_artxanda.zip",
+      "feedId": "funicular_artxanda"
+    },
+    {
+      "type": "gtfs",
+      "source": "alsa_autobuses.zip",
+      "feedId": "alsa_autobuses"
+    }
   ],
   "maxStopToShapeSnapDistance": 500
 }
